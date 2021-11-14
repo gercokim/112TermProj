@@ -14,16 +14,17 @@ def appStarted(app):
     app.paused = False
     app.playerTimer = 28
     app.ground = (0, app.height-app.height/10, app.width, app.height)
-    app.platforms = [(app.width/1.5+1.5*app.width/10, app.height/2.25, 
-                     app.width/2+1.5*app.width/10, app.height/2), 
-                     (app.width/1.5-app.width/5, app.height/2.25+app.height/5, 
-                     app.width/2-app.width/5, app.height/2+app.height/5),
-                     (app.width/1.5+app.width/2, app.height/2.25+app.height/5, 
-                     app.width/2+app.width/2, app.height/2+app.height/5)]
+    app.platforms = [(app.width/2+1.5*app.width/10, app.height/2.25, 
+                     app.width/1.5+1.5*app.width/10, app.height/2), 
+                     (app.width/2-app.width/5, app.height/2.25+app.height/5, 
+                     app.width/1.5-app.width/5, app.height/2+app.height/5),
+                     (app.width/2+app.width/2, app.height/2.25+app.height/5, 
+                     app.width/1.5+app.width/2, app.height/2+app.height/5)]
     app.platformNum = len(app.platforms)
     app.platformSpacing = 90
     app.score = 0
 
+    
 # returns bounds of the player
 def playerBounds(app):
     cx0, cy0 = (app.playerX, app.playerY)
@@ -34,19 +35,20 @@ def playerBounds(app):
 def platformBounds(app, platform):
     return app.platforms[platform]
 
-# def getPlatformHit(app):
-#     playerBounds = playerBounds(app)
-#     for platform in range(app.platformNum):
-#         platformBounds = platformBounds(app, platform)
-#         if boundsIntersect(app, playerBounds, platformBounds):
-#             return platform
-#     return -1
-
 # checks if the player and platform intersect
 def boundsIntersect(app, player, platform):
     (dx0, dy0, dx1, dy1) = player
     (px0, py0, px1, py1) = platform
-    return ((dx1 >= px0) and (px1 >= dx0) and (dy1 >= py0) and (py1 >= dy0))
+    print(dy1, py1)
+    return (dy1-py0 < 1) and (px0 <= dx1+app.scrollX <= px1)
+
+def touchGround(app, player):
+    (dx0, dy0, dx1, dy1) = player
+    return dy1 == app.ground[1]
+
+# Testing boundsIntersect conditions
+#(py0 <= dy1 <= py1)    
+#((dx1 >= px0) and (px1 >= dx0) and (dy1 >= py0) and (py1 >= dy0))
 
 # Checks if the player is at center
 def isPlayerCenter(app):
@@ -54,13 +56,6 @@ def isPlayerCenter(app):
         return False
     else:
         return True
-
-def movePlayer(app):
-    playerBound = playerBounds(app)
-    for platform in range(app.platformNum):
-        platformBound = platformBounds(app, platform)
-        if boundsIntersect(app, playerBound, platformBound) == True:
-            app.score += 1
 
 def keyPressed(app, event):
     if not app.isGameOver and isPlayerCenter(app):
@@ -109,6 +104,15 @@ def keyPressed(app, event):
 
 # Player jumps after space is pressed
 def timerFired(app):
+    print(app.paused, app.playerTimer)
+    playerBound = playerBounds(app)
+    if touchGround(app, playerBound):
+        app.paused = False
+    for platform in range(app.platformNum):
+        platformBound = platformBounds(app, platform)
+        print(boundsIntersect(app, playerBound, platformBound))
+        if boundsIntersect(app, playerBound, platformBound) == True:
+            app.paused = False
     if app.paused:
         doStep(app)
 
@@ -116,9 +120,6 @@ def doStep(app):
     if app.playerTimer >= -28:
         app.playerY -= app.playerTimer
         app.playerTimer -= 4
-
-def checkCollision(app):
-    return 
 
 def redrawAll(app, canvas):
     # Game started text
@@ -128,10 +129,6 @@ def redrawAll(app, canvas):
     # Game finished text
     if app.isGameOver:
         canvas.create_text(app.width/2, app.height/5, text='Level Complete!', font='Didot 25 bold', fill='purple')
-    
-    # Basic ground level
-    canvas.create_rectangle(0, app.height-app.height/10, app.width, app.height, 
-                            fill='green', outline='black')
    
     # Three platforms
     # canvas.create_rectangle(app.width/1.5+1.5*app.width/10-app.scrollX, app.height/2.25, 
@@ -154,12 +151,22 @@ def redrawAll(app, canvas):
                             app.width/2+app.width-app.scrollX, app.height/2+app.height/2.2, 
                             fill='blue', outline='black')
 
+    # Basic ground level
+    canvas.create_rectangle(0, app.height-app.height/10, app.width, app.height, 
+                            fill='green', outline='black')
+
     # Debugging Text
-    canvas.create_text(app.width/2, app.height/10, text=f'ScrollX = {app.score}', font='Arial 15 bold', fill='black')
+    canvas.create_text(app.width/2, app.height/10, text=f'ScrollX = {app.scrollX}', font='Arial 15 bold', fill='black')
     canvas.create_text(app.width/2, app.height/20, text=f'gameMargin = {app.gameMargin}', font='Arial 15 bold', fill='black')
 
     # Temporary dot character
     (cx0, cy0, cx1, cy1) = playerBounds(app)
     canvas.create_oval(cx0, cy0, cx1, cy1, fill='red', outline='black')
+
+    canvas.create_line(280, 0, 280, app.height, fill='black')
+    canvas.create_line(180, 0, 180, app.height, fill='purple')
+    canvas.create_line(0, 193.333, app.width, 193.333, fill='blue')
+    canvas.create_line(0, 210, app.width, 210, fill='red')
+
 
 runApp(width=600, height=300) 
