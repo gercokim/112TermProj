@@ -28,8 +28,8 @@ def appStarted(app):
     
 # returns bounds of the player
 def playerBounds(app):
-    cx0, cy0 = (app.playerX, app.playerY)
-    cx1, cy1 = (app.playerX - 2*app.r, app.playerY - 2*app.r)
+    cx0, cy0 = (app.playerX - 2*app.r, app.playerY - 2*app.r)
+    cx1, cy1 = (app.playerX, app.playerY) 
     return (cx0, cy0, cx1, cy1)
 
 # returns the bounds of a given platform
@@ -40,8 +40,7 @@ def platformBounds(app, platform):
 def boundsIntersect(app, player, platform):
     (dx0, dy0, dx1, dy1) = player
     (px0, py0, px1, py1) = platform
-    print(dy1, py1)
-    return (dy1-py0 < 1) and (px0 <= dx1+app.scrollX <= px1)
+    return (0 < dy1-py0 < 100) and (px0 <= dx1+app.scrollX <= px1)
 
 def touchGround(app, player):
     (dx0, dy0, dx1, dy1) = player
@@ -105,17 +104,13 @@ def keyPressed(app, event):
 
 # Player jumps after space is pressed
 def timerFired(app):
-    print(app.paused, app.playerTimer)
-    playerBound = playerBounds(app)
-    if touchGround(app, playerBound):
-        app.paused = False
-    for platform in range(app.platformNum):
-        platformBound = platformBounds(app, platform)
-        print(boundsIntersect(app, playerBound, platformBound))
-        if boundsIntersect(app, playerBound, platformBound) == True:
-            app.paused = False
     if app.paused:
         doStep(app)
+    playerBound = playerBounds(app)
+    for platform in range(app.platformNum):
+        platformBound = platformBounds(app, platform)
+        if boundsIntersect(app, playerBound, platformBound) == True:
+            app.paused = False
 
 def doStep(app):
     if app.playerTimer >= -28:
