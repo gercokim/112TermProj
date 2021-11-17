@@ -1,5 +1,6 @@
 from cmu_112_graphics import *
 
+# what up dog
 def appStarted(app):
     app.cx = app.width/3
     app.cy = app.width/3
