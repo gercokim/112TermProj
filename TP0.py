@@ -1,5 +1,5 @@
 from cmu_112_graphics import *
-
+import math
 
 def appStarted(app):
     app.cx = app.width/3
@@ -24,6 +24,7 @@ def appStarted(app):
     app.platformNum = len(app.platforms)
     app.platformSpacing = 90
     app.score = 0
+    app.scrollPause = False
 
     
 # returns bounds of the player
@@ -40,7 +41,7 @@ def platformBounds(app, platform):
 def boundsIntersect(app, player, platform):
     (dx0, dy0, dx1, dy1) = player
     (px0, py0, px1, py1) = platform
-    return (0 < dy1-py0 < 100) and (px0 <= dx1+app.scrollX <= px1)
+    return (0 < dy1-py0 < 5) and (px0 <= dx1+app.scrollX <= px1)
 
 def touchGround(app, player):
     (dx0, dy0, dx1, dy1) = player
@@ -102,7 +103,6 @@ def keyPressed(app, event):
             app.playerTimer = 28
             app.paused = True
 
-# Player jumps after space is pressed
 def timerFired(app):
     if app.paused:
         doStep(app)
@@ -111,11 +111,26 @@ def timerFired(app):
         platformBound = platformBounds(app, platform)
         if boundsIntersect(app, playerBound, platformBound) == True:
             app.paused = False
-
+        
+# Player jumps after space is pressed
 def doStep(app):
-    if app.playerTimer >= -28:
+    # if app.playerTimer >= -28:
+    #     app.playerY -= app.playerTimer
+    #     app.playerTimer -= 4
+    playerBound = playerBounds(app)
+    print(touchGround(app, playerBound), app.playerTimer, app.ground[1], playerBound[3]) 
+    if app.playerTimer >= 0:
         app.playerY -= app.playerTimer
         app.playerTimer -= 4
+    elif not touchGround(app, playerBound):
+            app.playerY += 8
+            
+            
+
+def downStep(app):
+    playerBound = playerBounds(app)
+    if not touchGround(app, playerBound):
+        app.playerY += 4  
 
 def redrawAll(app, canvas):
     # Game started text
@@ -159,10 +174,10 @@ def redrawAll(app, canvas):
     (cx0, cy0, cx1, cy1) = playerBounds(app)
     canvas.create_oval(cx0, cy0, cx1, cy1, fill='red', outline='black')
 
-    canvas.create_line(280, 0, 280, app.height, fill='black')
-    canvas.create_line(180, 0, 180, app.height, fill='purple')
-    canvas.create_line(0, 193.333, app.width, 193.333, fill='blue')
-    canvas.create_line(0, 210, app.width, 210, fill='red')
+    # canvas.create_line(280, 0, 280, app.height, fill='black')
+    # canvas.create_line(180, 0, 180, app.height, fill='purple')
+    # canvas.create_line(0, 193.333, app.width, 193.333, fill='blue')
+    # canvas.create_line(0, 210, app.width, 210, fill='red')
 
 
 runApp(width=600, height=300) 
