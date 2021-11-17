@@ -146,14 +146,14 @@ def redrawAll(app, canvas):
         (x0, y0, x1, y1) = platformBounds(app, platform)
         canvas.create_rectangle(x0-app.scrollX, y0, x1-app.scrollX, y1, fill='black', outline='black')
 
+    # Basic ground level
+    canvas.create_rectangle(0, app.height-app.height/10, app.width, app.height, 
+                            fill='green', outline='black')
+
     # Final platform to end game
     canvas.create_rectangle(app.width/1.5+app.width-app.scrollX, app.height/2.25+app.height/2.2, 
                             app.width/2+app.width-app.scrollX, app.height/2+app.height/2.2, 
                             fill='blue', outline='black')
-
-    # Basic ground level
-    canvas.create_rectangle(0, app.height-app.height/10, app.width, app.height, 
-                            fill='green', outline='black')
 
     # Debugging Text
     canvas.create_text(app.width/2, app.height/10, text=f'ScrollX = {app.scrollX}', font='Arial 15 bold', fill='black')
