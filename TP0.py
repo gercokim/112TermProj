@@ -7,6 +7,7 @@ def appStarted(app):
     app.r = 20
     app.playerX = app.cx+app.r-app.width/3.5
     app.playerY = app.cy+app.r+app.width/12
+    app.playerColor = 'red'
     app.playerScrollX = 0
     app.scrollX = 0
     app.gameMargin = 0
@@ -24,6 +25,12 @@ def appStarted(app):
     app.platformNum = len(app.platforms)
     app.platformSpacing = 90
     app.onPlatform = False
+    app.speedpowerR = 10
+    app.speedpowerX = app.width/6
+    app.speedpowerY = app.height-app.height/10
+    app.speedpowerTouch = False
+    app.scrollSpeed = 10
+    app.timeTouched = 0
 
 # returns bounds of the player
 def playerBounds(app):
@@ -34,6 +41,12 @@ def playerBounds(app):
 # returns the bounds of a given platform
 def platformBounds(app, platform):
     return app.platforms[platform]
+
+# returns the bounds of speed power
+def speedpowerBounds(app):
+    cx0, cy0 = (app.speedpowerX - app.speedpowerR, app.speedpowerY - 2*app.speedpowerR)
+    cx1, cy1 = (app.speedpowerX + app.speedpowerR, app.speedpowerY)
+    return (cx0, cy0, cx1, cy1)
 
 # checks if the player and platform intersect
 def boundsIntersect(app, player, platform):
@@ -54,33 +67,62 @@ def touchGround(app, player):
 #(py0 <= dy1 <= py1)    
 #((dx1 >= px0) and (px1 >= dx0) and (dy1 >= py0) and (py1 >= dy0))
 
+# checks if the speed powerup has been consumed by player
+def touchSpeed(app, player, power):
+    (dx0, dy0, dx1, dy1) = player
+    (px0, py0, px1, py1) = power
+    return (dx1 > px0) and (dx0 < px1) and (py1 <= dy1) and (py0 >= dy0)
+
 # Checks if the player is at center
 def isPlayerCenter(app):
-    if app.playerScrollX != app.width/2:
-        return False
-    else:
+    if 0 <= app.playerScrollX - app.width/2 <= 10:
         return True
+    else:
+        return False
+
+# Other isPlayerCenter condition
+# if app.playerScrollX != app.width/2:
+#         return False
+#     else:
+#         return True
 
 def keyPressed(app, event):
+    # incrases speed if the player consumes speed powerup
+    if app.speedpowerTouch == False and touchSpeed(app, playerBounds(app), speedpowerBounds(app)):
+        app.scrollSpeed = 20
+        app.speedpowerTouch = True
+        app.playerColor = 'blue'
+        app.timeTouched = app.gameTimer # keeps track of the time when speed powre is consumed
+    
+    # cancels powerspeed after a certain amount of time
+    if app.speedpowerTouch and app.playerColor == 'blue' and app.gameTimer > app.timeTouched + 30:
+        app.playerColor = 'red'
+        app.scrollSpeed = 10
+    
+    # moves player when player is at center
     if not app.isGameOver and isPlayerCenter(app):
         if event.key == 'Left':
-            app.scrollX -= 10
-            app.gameTimer += 10
+            app.scrollX -= app.scrollSpeed
+            #app.gameTimer += 10
+            app.speedpowerX += app.scrollSpeed
             if app.gameMargin <= 0: # prevents player from going beyond game margins
-                app.scrollX += 10
-                app.playerX -= 10
-                app.playerScrollX -= 10
+                app.scrollX += app.scrollSpeed
+                app.playerX -= app.scrollSpeed
+                app.playerScrollX -= app.scrollSpeed
+                app.speedpowerX -= app.scrollSpeed
             else:
-                app.gameMargin -= 10
+                app.gameMargin -= app.scrollSpeed
         elif event.key == 'Right':
-            app.scrollX += 10
-            app.gameTimer += 10
+            app.scrollX += app.scrollSpeed
+            #app.gameTimer += 10
+            app.speedpowerX -= app.scrollSpeed
             if app.gameMargin > app.width/1.5: # prevents player from going beyond game margins
-                app.scrollX -= 10
-                app.playerX += 10
-                app.playerScrollX += 10
+                app.scrollX -= app.scrollSpeed
+                app.playerX += app.scrollSpeed
+                app.playerScrollX += app.scrollSpeed
+                app.speedpowerX += app.scrollSpeed
             else:
-                app.gameMargin += 10
+                app.gameMargin += app.scrollSpeed
         elif event.key == 'Space':
             app.playerTimer = 28
             app.paused = True
@@ -88,30 +130,30 @@ def keyPressed(app, event):
     # Moves player if player is not at center
     elif not app.isGameOver:
         if event.key == 'Left':
-            app.gameTimer += 10
-            app.playerScrollX -= 10
-            app.playerX -= 10
+            #app.gameTimer += 10
+            app.playerScrollX -= app.scrollSpeed
+            app.playerX -= app.scrollSpeed
             if app.playerScrollX <= 0:
-                app.playerX += 10
-                app.playerScrollX += 10
+                app.playerX += app.scrollSpeed
+                app.playerScrollX += app.scrollSpeed
         elif event.key == 'Right':
-            app.gameTimer += 10
-            app.playerScrollX += 10
-            app.playerX += 10
-            if app.playerScrollX >= app.width/1.15:
-                app.playerX -= 10
-                app.playerScrollX -= 10
+            playerBound = playerBounds(app)
+            #app.gameTimer += 10
+            app.playerScrollX += app.scrollSpeed
+            app.playerX += app.scrollSpeed
+            if app.playerScrollX >= app.width/1.15 and touchGround(app, playerBound):
+                app.playerX -= app.scrollSpeed
+                app.playerScrollX -= app.scrollSpeed
                 app.isGameOver = True
         elif event.key == 'Space':
             app.playerTimer = 28
             app.paused = True
 
 def timerFired(app):
+    app.gameTimer += 1 # keeps track of time passed as game starts
     if app.paused:
         doStep(app)
     playerBound = playerBounds(app)
-    # checks if player is standing on ground
-    # if so, then there's no need to check if player's on platform
     if touchGround(app, playerBound):
         app.onPlatform = True
         return
@@ -189,17 +231,29 @@ def redrawAll(app, canvas):
                             app.width/2+app.width-app.scrollX, app.height/2+app.height/2.2, 
                             fill='blue', outline='black')
 
+
+    # Drawing PowerUps
+
+    # Blue is speed
+    if app.speedpowerTouch == False: 
+        px0, py0, px1, py1 = speedpowerBounds(app)
+        canvas.create_oval(px0, py0, px1, py1, fill='blue', outline='black')
+
+    # Purple is 
+
+
     # Debugging Text
-    canvas.create_text(app.width/2, app.height/10, text=f'ScrollX = {app.scrollX}', font='Arial 15 bold', fill='black')
-    canvas.create_text(app.width/2, app.height/20, text=f'gameMargin = {app.gameMargin}', font='Arial 15 bold', fill='black')
+    canvas.create_text(app.width/2, app.height/10, text=f'ScrollX = {app.gameTimer}', font='Arial 15 bold', fill='black')
+    canvas.create_text(app.width/2, app.height/20, text=f'gameMargin = {app.timeTouched}', font='Arial 15 bold', fill='black')
 
     # Temporary dot character
     (cx0, cy0, cx1, cy1) = playerBounds(app)
-    canvas.create_oval(cx0, cy0, cx1, cy1, fill='red', outline='black')
+    canvas.create_oval(cx0, cy0, cx1, cy1, fill=app.playerColor, outline='black')
 
-    # canvas.create_line(280, 0, 280, app.height, fill='black')
-    # canvas.create_line(180, 0, 180, app.height, fill='purple')
-    # canvas.create_line(0, 193.333, app.width, 193.333, fill='blue')
-    # canvas.create_line(0, 210, app.width, 210, fill='red')
+    # For debugging purposes
+        # canvas.create_line(280, 0, 280, app.height, fill='black')
+        # canvas.create_line(180, 0, 180, app.height, fill='purple')
+        # canvas.create_line(0, 193.333, app.width, 193.333, fill='blue')
+        # canvas.create_line(0, 210, app.width, 210, fill='red')
 
 runApp(width=600, height=300) 
