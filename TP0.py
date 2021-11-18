@@ -29,6 +29,7 @@ def appStarted(app):
     app.speedpowerX = app.width/6
     app.speedpowerY = app.height-app.height/10
     app.speedpowerTouch = False
+    app.tppowerTouch = False
     app.scrollSpeed = 10
     app.timeTouched = 0
 
@@ -46,6 +47,12 @@ def platformBounds(app, platform):
 def speedpowerBounds(app):
     cx0, cy0 = (app.speedpowerX - app.speedpowerR, app.speedpowerY - 2*app.speedpowerR)
     cx1, cy1 = (app.speedpowerX + app.speedpowerR, app.speedpowerY)
+    return (cx0, cy0, cx1, cy1)
+
+# returns the bounds of teleportation power
+def tppowerBounds(app):
+    cx0, cy0 = (app.speedpowerX - app.speedpowerR+app.width/2, app.speedpowerY - 2*app.speedpowerR)
+    cx1, cy1 = (app.speedpowerX + app.speedpowerR+app.width/2, app.speedpowerY)
     return (cx0, cy0, cx1, cy1)
 
 # checks if the player and platform intersect
@@ -73,6 +80,12 @@ def touchSpeed(app, player, power):
     (px0, py0, px1, py1) = power
     return (dx1 > px0) and (dx0 < px1) and (py1 <= dy1) and (py0 >= dy0)
 
+# checks if the teleportation powerup has been consumed by player
+def touchTP(app, player, power):
+    (dx0, dy0, dx1, dy1) = player
+    (px0, py0, px1, py1) = power
+    return (dx1 > px0) and (dx0 < px1) and (py1 <= dy1) and (py0 >= dy0)
+
 # Checks if the player is at center
 def isPlayerCenter(app):
     if 0 <= app.playerScrollX - app.width/2 <= 10:
@@ -87,7 +100,7 @@ def isPlayerCenter(app):
 #         return True
 
 def keyPressed(app, event):
-    # incrases speed if the player consumes speed powerup
+    # increases speed if the player consumes speed powerup
     if app.speedpowerTouch == False and touchSpeed(app, playerBounds(app), speedpowerBounds(app)):
         app.scrollSpeed = 20
         app.speedpowerTouch = True
@@ -98,6 +111,16 @@ def keyPressed(app, event):
     if app.speedpowerTouch and app.playerColor == 'blue' and app.gameTimer > app.timeTouched + 30:
         app.playerColor = 'red'
         app.scrollSpeed = 10
+    
+    # grants the power of teleportation to player
+    if app.tppowerTouch == False and touchTP(app, playerBounds(app), tppowerBounds(app)):
+        app.scrollSpeed = 10
+        app.tppowerTouch = True
+        app.playerColor = 'purple'
+        app.timeTouched = app.gameTimer
+
+    if app.tppowerTouch and app.playerColor == 'purple' and app.gameTimer > app.timeTouched + 50:
+        app.playerColor = 'red'       
     
     # moves player when player is at center
     if not app.isGameOver and isPlayerCenter(app):
@@ -123,6 +146,11 @@ def keyPressed(app, event):
                 app.speedpowerX += app.scrollSpeed
             else:
                 app.gameMargin += app.scrollSpeed
+        # if teleportation power is consumed, space activates teleporting
+        elif event.key == 'Space' and app.playerColor == 'purple':
+            app.playerY -= 112
+            app.scrollX += 50
+            app.gameMargin += 50
         elif event.key == 'Space':
             app.playerTimer = 28
             app.paused = True
@@ -145,6 +173,11 @@ def keyPressed(app, event):
                 app.playerX -= app.scrollSpeed
                 app.playerScrollX -= app.scrollSpeed
                 app.isGameOver = True
+        # if teleportation power is consumed, space activates teleporting
+        elif event.key == 'Space' and app.playerColor == 'purple':
+            app.playerY -= 112
+            app.playerX += 50
+            app.playerScrollX += 50
         elif event.key == 'Space':
             app.playerTimer = 28
             app.paused = True
@@ -239,7 +272,10 @@ def redrawAll(app, canvas):
         px0, py0, px1, py1 = speedpowerBounds(app)
         canvas.create_oval(px0, py0, px1, py1, fill='blue', outline='black')
 
-    # Purple is 
+    # Purple is teleportation i.e. teleports player up and forward
+    if app.tppowerTouch == False:
+        tx0, ty0, tx1, ty1 = tppowerBounds(app) 
+        canvas.create_oval(tx0, ty0, tx1, ty1, fill='purple', outline='black')
 
 
     # Debugging Text
