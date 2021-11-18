@@ -13,7 +13,7 @@ def appStarted(app):
     app.gameTimer = 0
     app.isGameOver = False
     app.paused = False
-    app.playerTimer = 28
+    app.playerTimer = 28 
     app.ground = (0, app.height-app.height/10, app.width, app.height)
     app.platforms = [(app.width/2+1.5*app.width/10, app.height/2.25, 
                      app.width/1.5+1.5*app.width/10, app.height/2), 
@@ -23,10 +23,8 @@ def appStarted(app):
                      app.width/1.5+app.width/2, app.height/2+app.height/5)]
     app.platformNum = len(app.platforms)
     app.platformSpacing = 90
-    app.score = 0
-    app.scrollPause = False
+    app.onPlatform = False
 
-    
 # returns bounds of the player
 def playerBounds(app):
     cx0, cy0 = (app.playerX - 2*app.r, app.playerY - 2*app.r)
@@ -41,8 +39,13 @@ def platformBounds(app, platform):
 def boundsIntersect(app, player, platform):
     (dx0, dy0, dx1, dy1) = player
     (px0, py0, px1, py1) = platform
-    return (0 < dy1-py0 < 5) and (px0 <= dx1+app.scrollX <= px1)
+    # the reason for the 0 to 5 bounds because the incrementing of the jump animation
+    # does not evenly match with the bounds of platforms
+    return (0 < dy1-py0 < 5) and (px0 <= (dx1+dx0)/2+app.scrollX <= px1)
+    
+#(px0 <= dx1+app.scrollX <= px1)
 
+# checks if the player is on ground
 def touchGround(app, player):
     (dx0, dy0, dx1, dy1) = player
     return dy1 == app.ground[1]
@@ -107,30 +110,50 @@ def timerFired(app):
     if app.paused:
         doStep(app)
     playerBound = playerBounds(app)
+    # checks if player is standing on ground
+    # if so, then there's no need to check if player's on platform
+    if touchGround(app, playerBound):
+        app.onPlatform = True
+        return
     for platform in range(app.platformNum):
         platformBound = platformBounds(app, platform)
+        # if player is standing on platform, the player stops the jump animation
         if boundsIntersect(app, playerBound, platformBound) == True:
             app.paused = False
+            app.onPlatform = True
+            return
+        # if player is not on platform, the player falls to the ground
+        if app.onPlatform==False and app.paused==False and boundsIntersect(app, playerBound, platformBounds(app, platform))==False:
+            downStep(app)
+    # in the case that the player is not standing on any surface, onPlatform is false
+    app.onPlatform = False
+
         
 # Player jumps after space is pressed
 def doStep(app):
-    # if app.playerTimer >= -28:
-    #     app.playerY -= app.playerTimer
-    #     app.playerTimer -= 4
     playerBound = playerBounds(app)
-    print(touchGround(app, playerBound), app.playerTimer, app.ground[1], playerBound[3]) 
     if app.playerTimer >= 0:
         app.playerY -= app.playerTimer
         app.playerTimer -= 4
     elif not touchGround(app, playerBound):
             app.playerY += 8
             
-            
-
+# Player falls if not standing on a surface
 def downStep(app):
     playerBound = playerBounds(app)
     if not touchGround(app, playerBound):
-        app.playerY += 4  
+        app.playerY += 8
+
+# testing different versions of downStep 
+def downStep2(app):
+    playerBound = playerBounds(app)
+    bounds = app.platforms[1][1] <= playerBound[3] <= app.platforms[1][3]
+    print(app.platforms[1][1], playerBound[3], app.platforms[1][3], bounds)
+    if app.platforms[1][1] <= playerBound[3] <= app.platforms[1][3]:
+        print('stop down')
+    else:
+        if not touchGround(app, playerBound):
+            app.playerY += 1
 
 def redrawAll(app, canvas):
     # Game started text
@@ -178,6 +201,5 @@ def redrawAll(app, canvas):
     # canvas.create_line(180, 0, 180, app.height, fill='purple')
     # canvas.create_line(0, 193.333, app.width, 193.333, fill='blue')
     # canvas.create_line(0, 210, app.width, 210, fill='red')
-
 
 runApp(width=600, height=300) 
