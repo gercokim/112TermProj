@@ -29,9 +29,25 @@ def appStarted(app):
     app.speedpowerX = app.width/6
     app.speedpowerY = app.height-app.height/10
     app.speedpowerTouch = False
-    app.tppowerTouch = False
+    app.tppoweritems = [[app.speedpowerX - app.speedpowerR+app.width/2, 
+                        app.speedpowerY - 2*app.speedpowerR, 
+                        app.speedpowerX + app.speedpowerR+app.width/2, app.speedpowerY],
+                        [app.speedpowerX - app.speedpowerR+app.width/2+5*app.r, 
+                        app.speedpowerY - 2*app.speedpowerR-4*app.r, 
+                        app.speedpowerX + app.speedpowerR+app.width/2+5*app.r, app.speedpowerY-4*app.r],
+                        [app.speedpowerX - app.speedpowerR+app.width/2+5*app.r, 
+                        app.speedpowerY - 2*app.speedpowerR, 
+                        app.speedpowerX + app.speedpowerR+app.width/2+5*app.r, app.speedpowerY]]
+    app.tppowerTouch = [False, False, False]
+    app.tppower = False
     app.scrollSpeed = 10
     app.timeTouched = 0
+    app.enemyX = app.width/5
+    app.enemyY = app.width/5
+    app.enemies = [[app.enemyX-10+75, app.height/2.25+app.height/5-30, 
+                    app.enemyX+10+75, app.height/2.25+app.height/5],
+                    [app.enemyX-10+180, app.height-app.height/10-30, 
+                    app.enemyX+10+180, app.height-app.height/10]]
 
 # returns bounds of the player
 def playerBounds(app):
@@ -43,6 +59,9 @@ def playerBounds(app):
 def platformBounds(app, platform):
     return app.platforms[platform]
 
+def enemyBounds(app, enemy):
+    return app.enemies[enemy]
+
 # returns the bounds of speed power
 def speedpowerBounds(app):
     cx0, cy0 = (app.speedpowerX - app.speedpowerR, app.speedpowerY - 2*app.speedpowerR)
@@ -50,10 +69,8 @@ def speedpowerBounds(app):
     return (cx0, cy0, cx1, cy1)
 
 # returns the bounds of teleportation power
-def tppowerBounds(app):
-    cx0, cy0 = (app.speedpowerX - app.speedpowerR+app.width/2, app.speedpowerY - 2*app.speedpowerR)
-    cx1, cy1 = (app.speedpowerX + app.speedpowerR+app.width/2, app.speedpowerY)
-    return (cx0, cy0, cx1, cy1)
+def tppowerBounds(app, item):
+    return app.tppoweritems[item]
 
 # checks if the player and platform intersect
 def boundsIntersect(app, player, platform):
@@ -107,20 +124,20 @@ def keyPressed(app, event):
         app.playerColor = 'blue'
         app.timeTouched = app.gameTimer # keeps track of the time when speed powre is consumed
     
-    # cancels powerspeed after a certain amount of time
+    # cancels speed powerup after a certain amount of time
     if app.speedpowerTouch and app.playerColor == 'blue' and app.gameTimer > app.timeTouched + 30:
         app.playerColor = 'red'
         app.scrollSpeed = 10
-    
-    # grants the power of teleportation to player
-    if app.tppowerTouch == False and touchTP(app, playerBounds(app), tppowerBounds(app)):
-        app.scrollSpeed = 10
-        app.tppowerTouch = True
-        app.playerColor = 'purple'
-        app.timeTouched = app.gameTimer
 
-    if app.tppowerTouch and app.playerColor == 'purple' and app.gameTimer > app.timeTouched + 50:
-        app.playerColor = 'red'       
+    # grants the power of teleportation to player if three purple items are collected
+    if app.tppowerTouch == [True, True, True] and app.tppower == False:
+        app.scrollSpeed = 10
+        app.tppower = True
+        app.playerColor = 'purple'
+
+    # cancels tp powerup after a certain amount of time
+    # if app.tppowerTouch and app.playerColor == 'purple' and app.gameTimer > app.timeTouched + 50:
+    #     app.playerColor = 'red' 
     
     # moves player when player is at center
     if not app.isGameOver and isPlayerCenter(app):
@@ -128,22 +145,48 @@ def keyPressed(app, event):
             app.scrollX -= app.scrollSpeed
             #app.gameTimer += 10
             app.speedpowerX += app.scrollSpeed
-            if app.gameMargin <= 0: # prevents player from going beyond game margins
+            #moves the tp items as the player moves
+            for item in range(len(app.tppoweritems)):
+                app.tppoweritems[item][0] += app.scrollSpeed
+                app.tppoweritems[item][2] += app.scrollSpeed
+            #moves the tp items as the player moves
+            for enemy in range(len(app.enemies)):
+                app.enemies[enemy][0] += app.scrollSpeed
+                app.enemies[enemy][2] += app.scrollSpeed
+            if app.gameMargin <= 0: # prevents player as well as any other items from going beyond game margins
                 app.scrollX += app.scrollSpeed
                 app.playerX -= app.scrollSpeed
                 app.playerScrollX -= app.scrollSpeed
                 app.speedpowerX -= app.scrollSpeed
+                for item in range(len(app.tppoweritems)):
+                    app.tppoweritems[item][0] -= app.scrollSpeed
+                    app.tppoweritems[item][2] -= app.scrollSpeed
+                for enemy in range(len(app.enemies)):
+                    app.enemies[enemy][0] -= app.scrollSpeed
+                    app.enemies[enemy][2] -= app.scrollSpeed
             else:
                 app.gameMargin -= app.scrollSpeed
         elif event.key == 'Right':
             app.scrollX += app.scrollSpeed
             #app.gameTimer += 10
             app.speedpowerX -= app.scrollSpeed
-            if app.gameMargin > app.width/1.5: # prevents player from going beyond game margins
+            for item in range(len(app.tppoweritems)):
+                app.tppoweritems[item][0] -= app.scrollSpeed
+                app.tppoweritems[item][2] -= app.scrollSpeed
+            for enemy in range(len(app.enemies)):
+                app.enemies[enemy][0] -= app.scrollSpeed
+                app.enemies[enemy][2] -= app.scrollSpeed
+            if app.gameMargin > app.width/1.5: # prevents player as well as any other itemsfrom going beyond game margins
                 app.scrollX -= app.scrollSpeed
                 app.playerX += app.scrollSpeed
                 app.playerScrollX += app.scrollSpeed
                 app.speedpowerX += app.scrollSpeed
+                for item in range(len(app.tppoweritems)):
+                    app.tppoweritems[item][0] += app.scrollSpeed
+                    app.tppoweritems[item][2] += app.scrollSpeed
+                for enemy in range(len(app.enemies)):
+                    app.enemies[enemy][0] += app.scrollSpeed
+                    app.enemies[enemy][2] += app.scrollSpeed
             else:
                 app.gameMargin += app.scrollSpeed
         # if teleportation power is consumed, space activates teleporting
@@ -151,6 +194,7 @@ def keyPressed(app, event):
             app.playerY -= 112
             app.scrollX += 50
             app.gameMargin += 50
+            app.speedpowerX -= 50
         elif event.key == 'Space':
             app.playerTimer = 28
             app.paused = True
@@ -178,20 +222,32 @@ def keyPressed(app, event):
             app.playerY -= 112
             app.playerX += 50
             app.playerScrollX += 50
+            #app.paused = True
         elif event.key == 'Space':
             app.playerTimer = 28
             app.paused = True
 
 def timerFired(app):
     app.gameTimer += 1 # keeps track of time passed as game starts
+    #print(playerBounds(app))
     if app.paused:
         doStep(app)
     playerBound = playerBounds(app)
+
+    # checks all the items to see if they have been touched
+    for item in range(len(app.tppoweritems)):
+        if touchTP(app, playerBounds(app), tppowerBounds(app,item)):
+            app.tppowerTouch[item] = True
+    
+    for enemy in range(len(app.enemies)):
+        enemyStep(app, enemy)
+
     if touchGround(app, playerBound):
         app.onPlatform = True
         return
     for platform in range(app.platformNum):
         platformBound = platformBounds(app, platform)
+        print(boundsIntersect(app, playerBound, platformBound))
         # if player is standing on platform, the player stops the jump animation
         if boundsIntersect(app, playerBound, platformBound) == True:
             app.paused = False
@@ -230,6 +286,10 @@ def downStep2(app):
         if not touchGround(app, playerBound):
             app.playerY += 1
 
+def enemyStep(app, enemy):
+    if app.enemies[enemy]:
+        return
+
 def redrawAll(app, canvas):
     # Game started text
     if app.gameTimer <= 70:
@@ -265,19 +325,32 @@ def redrawAll(app, canvas):
                             fill='blue', outline='black')
 
 
-    # Drawing PowerUps
+    # Drawing PowerUps/Items
 
     # Blue is speed
     if app.speedpowerTouch == False: 
         px0, py0, px1, py1 = speedpowerBounds(app)
         canvas.create_oval(px0, py0, px1, py1, fill='blue', outline='black')
 
-    # Purple is teleportation i.e. teleports player up and forward
-    if app.tppowerTouch == False:
-        tx0, ty0, tx1, ty1 = tppowerBounds(app) 
-        canvas.create_oval(tx0, ty0, tx1, ty1, fill='purple', outline='black')
+    # Purple is are items to repair teleportation machine i.e. teleports player up and slightly forward
+    for item in range(len(app.tppoweritems)):
+        if app.tppowerTouch[item] == False and app.tppower == False:
+            tx0, ty0, tx1, ty1 = tppowerBounds(app, item) 
+            canvas.create_oval(tx0, ty0, tx1, ty1, fill='purple', outline='black')
+    
+    # canvas.create_oval(tx0+5*app.r, ty0-4*app.r, tx1+5*app.r, ty1-4*app.r, fill='purple', outline='black')
+    # canvas.create_oval(tx0+5*app.r, ty0, tx1+5*app.r, ty1, fill='purple', outline='black')
 
-
+    # Drawing Enemies
+    for enemy in range(len(app.enemies)):
+        ex0, ey0, ex1, ey1 = enemyBounds(app, enemy)
+        canvas.create_rectangle(ex0, ey0, ex1, ey1, fill='yellow', outline='black')
+    
+    # canvas.create_rectangle(app.enemyX-10+75, app.height/2.25+app.height/5-30, app.enemyX+10+75, app.height/2.25+app.height/5, fill='yellow', outline='black')
+    # canvas.create_rectangle(app.enemyX-10+180, app.height-app.height/10-30, app.enemyX+10+180, app.height-app.height/10, fill='yellow', outline='black')
+#app.height/2.25+app.height/5
+#app.height-app.height/10
+    
     # Debugging Text
     canvas.create_text(app.width/2, app.height/10, text=f'ScrollX = {app.gameTimer}', font='Arial 15 bold', fill='black')
     canvas.create_text(app.width/2, app.height/20, text=f'gameMargin = {app.timeTouched}', font='Arial 15 bold', fill='black')
