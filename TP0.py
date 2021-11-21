@@ -400,5 +400,10 @@ def redrawAll(app, canvas):
         # canvas.create_line(180, 0, 180, app.height, fill='purple')
         # canvas.create_line(0, 193.333, app.width, 193.333, fill='blue')
         # canvas.create_line(0, 210, app.width, 210, fill='red')
+    
+    #line for floor height which is 540
+    canvas.create_line(0, app.height-app.height/10, app.width, app.height-app.height/10, fill='black')
+    
 
 runApp(width=600, height=300) 
+
