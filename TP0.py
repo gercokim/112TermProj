@@ -183,13 +183,15 @@ def keyPressed(app, event):
             app.scrollX += app.scrollSpeed
             #app.gameTimer += 10
             app.speedpowerX -= app.scrollSpeed
+            # keeps items in a constant position while player moves
             for item in range(len(app.tppoweritems)):
                 app.tppoweritems[item][0] -= app.scrollSpeed
                 app.tppoweritems[item][2] -= app.scrollSpeed
+            # keeps enemies in a constant position while player moves
             for enemy in range(len(app.modifiedenemies)):
                 app.modifiedenemies[enemy][0] -= app.scrollSpeed
                 app.modifiedenemies[enemy][2] -= app.scrollSpeed
-            if app.gameMargin > app.width/1.5: # prevents player as well as any other itemsfrom going beyond game margins
+            if app.gameMargin > app.width: # prevents player as well as any other itemsfrom going beyond game margins
                 app.scrollX -= app.scrollSpeed
                 app.playerX += app.scrollSpeed
                 app.playerScrollX += app.scrollSpeed
@@ -249,7 +251,6 @@ def timerFired(app):
     if app.paused:
         doStep(app)
     playerBound = playerBounds(app)
-    print(boundsIntersect(app, app.originalenemies[0], platformBounds(app, 1)), app.originalenemies[0], platformBounds(app, 1))
     # checks all the items to see if they have been touched
     for item in range(len(app.tppoweritems)):
         if touchTP(app, playerBounds(app), tppowerBounds(app,item)):
@@ -336,31 +337,20 @@ def redrawAll(app, canvas):
     if app.playerDied:
         canvas.create_text(app.width/2, app.height/5, text='Game Over!', font='Didot 25 bold', fill='purple')
         canvas.create_text(app.width/2, app.height/3, text="Press 'R' to restart!", font='Didot 25 bold', fill='purple')
-    # Three platforms
-    # canvas.create_rectangle(app.width/1.5+1.5*app.width/10-app.scrollX, app.height/2.25, 
-    #                         app.width/2+1.5*app.width/10-app.scrollX, app.height/2, 
-    #                         fill='black', outline='black')
-    # canvas.create_rectangle(app.width/1.5-app.width/5-app.scrollX, app.height/2.25+app.height/5, 
-    #                         app.width/2-app.width/5-app.scrollX, app.height/2+app.height/5, 
-    #                         fill='black', outline='black')
-    # canvas.create_rectangle(app.width/1.5+app.width/2-app.scrollX, app.height/2.25+app.height/5, 
-    #                         app.width/2+app.width/2-app.scrollX, app.height/2+app.height/5, 
-    #                         fill='black', outline='black')
 
     # More efficient platform drawing
     for platform in range(app.platformNum):
         (x0, y0, x1, y1) = platformBounds(app, platform)
         canvas.create_rectangle(x0-app.scrollX, y0, x1-app.scrollX, y1, fill='black', outline='black')
 
+    print(platformBounds(app, 2))
     # Basic ground level
     canvas.create_rectangle(0, app.height-app.height/10, app.width, app.height, 
                             fill='green', outline='black')
 
     # Final platform to end game
-    canvas.create_rectangle(app.width/1.5+app.width-app.scrollX, app.height/2.25+app.height/2.2, 
-                            app.width/2+app.width-app.scrollX, app.height/2+app.height/2.2, 
-                            fill='blue', outline='black')
-
+    canvas.create_rectangle(2*app.width-100-app.scrollX, app.height/2.25+app.height/2.2,
+                            2*app.width-app.scrollX, app.height/2+app.height/2.2, fill='blue', outline='black')
     # Drawing PowerUps/Items
 
     # Blue is speed
@@ -374,21 +364,14 @@ def redrawAll(app, canvas):
             tx0, ty0, tx1, ty1 = tppowerBounds(app, item) 
             canvas.create_oval(tx0, ty0, tx1, ty1, fill='purple', outline='black')
     
-    # canvas.create_oval(tx0+5*app.r, ty0-4*app.r, tx1+5*app.r, ty1-4*app.r, fill='purple', outline='black')
-    # canvas.create_oval(tx0+5*app.r, ty0, tx1+5*app.r, ty1, fill='purple', outline='black')
-
+   
     # Drawing Enemies
     for enemy in range(len(app.modifiedenemies)):
         ex0, ey0, ex1, ey1 = enemyBounds(app, enemy)
         canvas.create_rectangle(ex0, ey0, ex1, ey1, fill='yellow', outline='black')
     
-    # canvas.create_rectangle(app.enemyX-10+75, app.height/2.25+app.height/5-30, app.enemyX+10+75, app.height/2.25+app.height/5, fill='yellow', outline='black')
-    # canvas.create_rectangle(app.enemyX-10+180, app.height-app.height/10-30, app.enemyX+10+180, app.height-app.height/10, fill='yellow', outline='black')
-#app.height/2.25+app.height/5
-#app.height-app.height/10
-    
     # Debugging Text
-    canvas.create_text(app.width/2, app.height/10, text=f'ScrollX = {app.gameTimer}', font='Arial 15 bold', fill='black')
+    canvas.create_text(app.width/2, app.height/10, text=f'ScrollX = {app.gameMargin}', font='Arial 15 bold', fill='black')
     canvas.create_text(app.width/2, app.height/20, text=f'gameMargin = {app.timeTouched}', font='Arial 15 bold', fill='black')
 
     # Temporary dot character
@@ -400,9 +383,6 @@ def redrawAll(app, canvas):
         # canvas.create_line(180, 0, 180, app.height, fill='purple')
         # canvas.create_line(0, 193.333, app.width, 193.333, fill='blue')
         # canvas.create_line(0, 210, app.width, 210, fill='red')
-    
-    #line for floor height which is 540
-    canvas.create_line(0, app.height-app.height/10, app.width, app.height-app.height/10, fill='black')
     
 
 runApp(width=600, height=300) 
