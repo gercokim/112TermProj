@@ -117,15 +117,30 @@ def platformIntersects(app, x0, x1, y0, y1):
     #         app.platformCells[platform][0] <= x1 <= app.platformCells[platform][2]):
     #         return True
 
-    if app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]:
+    # if app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]:
+    #     return True
+    if ((app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and 
+        app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2])and 
+        (app.platformCells[-1][1] <= y0 <= app.platformCells[-1][2]+2 and
+        app.platformCells[-1][1]-2 <= y1 <= app.platformCells[-1][2])):
         return True
 
     if len(app.platformCells) > 1:
-        if ((app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and 
+        if (((app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and 
         app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]) or
         (app.platformCells[-2][0] <= x0 <= app.platformCells[-2][2]+2 and 
-        app.platformCells[-2][0]-2 <= x1 <= app.platformCells[-2][2])):
+        app.platformCells[-2][0]-2 <= x1 <= app.platformCells[-2][2]))and 
+        ((app.platformCells[-1][1] <= y0 <= app.platformCells[-1][3]+2 and
+           app.platformCells[-1][1]-2 <= y1 <= app.platformCells[-1][3]) or 
+           (app.platformCells[-2][1] <= y0 <= app.platformCells[-2][3]+2 and 
+           app.platformCells[-2][1]-2 <= y1 <= app.platformCells[-2][3]))):
             return True
+            
+        # if ((app.platformCells[-1][1] <= y0 <= app.platformCells[-1][2]+2 and
+        #    app.platformCells[-1][1]-2 <= y1 <= app.platformCells[-1][2]) or 
+        #    (app.platformCells[-2][1] <= y0 <= app.platformCells[-2][2]+2 and 
+        #    app.platformCells[-2][1]-2 <= y1 <= app.platformCells[-2][2])):
+        #    return True
     return False
 
 # returns the actual coordinates of the platforms from the cell bounds
@@ -268,9 +283,9 @@ def isSolvable(app):
             minimumPlat = platform[1]
     
     # if the shortest platform does not reach player max jump height, check if any 
-    if minimumPlat < app.playerY+110:
+    if minimumPlat < app.playerY+112:
         for tp in app.tppoweritems:
-            if tp[3] < app.playerY-2*app.r-110:
+            if tp[3] < app.playerY-2*app.r-112:
                 # if there exists a tp item that is out of reach, than randomize all objects again
                 app.platformCells = []
                 randomizePlatform(app)
