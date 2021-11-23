@@ -51,6 +51,7 @@ def appStarted(app):
     app.playerDied = False
     app.level = 1
     app.levelCounter = 1
+    isSolvable(app)
 
 # returns bounds of the player
 def playerBounds(app):
@@ -101,14 +102,30 @@ def randomizePlatform(app):
 # checks if the randomized platform intersects with the latest platform added to the list
 def platformIntersects(app, x0, x1, y0, y1):
     # for platform in app.platformCells:
+    #     if (platform[1] <= y0 < (platform[3]+3) or 
+    #         (y1+3) > platform[1]):
+    #         return True
     #     if (platform[0] <= x0 <= platform[2]+1 or 
     #         platform[0]-1 <= x1 <= platform[2]):
     #         return True
-        # if (platform[1] <= y0 < (platform[3]+3) or 
-        #     (y1+3) > platform[1]):
-        #     return True
-    if app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 or app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]:
+
+    # for platform in range(0, len(app.platformCells), 2):
+    #     if (app.platformCells[platform][1] <= y0 < (app.platformCells[platform][3]) or 
+    #         (y1) > app.platformCells[platform][1]):
+    #         return True
+    #     if (app.platformCells[platform][0] <= x0 <= app.platformCells[platform][2] or 
+    #         app.platformCells[platform][0] <= x1 <= app.platformCells[platform][2]):
+    #         return True
+
+    if app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]:
         return True
+
+    if len(app.platformCells) > 1:
+        if ((app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and 
+        app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]) or
+        (app.platformCells[-2][0] <= x0 <= app.platformCells[-2][2]+2 and 
+        app.platformCells[-2][0]-2 <= x1 <= app.platformCells[-2][2])):
+            return True
     return False
 
 # returns the actual coordinates of the platforms from the cell bounds
@@ -129,6 +146,7 @@ def randomizeEnemies(app):
             y0 = app.platformCells[platform][1]
             y1 = y0+3
             app.enemyCells.append((x0, y0, x1, y1))
+    print(app.enemyOnPlatform)
     
     #randomizes positions of ground enemies
     while 3 <= len(app.enemyCells) < 6:
@@ -198,6 +216,15 @@ def randomizeTPItem(app):
         app.tppoweritems.append([app.speedpowerX - app.speedpowerR+x*10, app.speedpowerY - 2*app.speedpowerR - y*10,
                                  app.speedpowerX + app.speedpowerR+x*10, app.speedpowerY - y*10])
 
+    # for platform in range(len(app.platforms)):
+    #     if platform in app.enemyOnPlatform:
+    #         continue
+    #     print(app.platforms[platform])
+    #     x = (app.platforms[platform][2] - app.platforms[platform][0])//2
+    #     y = app.platforms[platform][1]-20
+    #     app.tppoweritems.append([app.speedpowerX - app.speedpowerR+x, app.speedpowerY - 2*app.speedpowerR - y,
+    #                              app.speedpowerX + app.speedpowerR+x, app.speedpowerY - y])
+
 # checks if the tp items itersect with each other or any other object
 def itemIntersects(app, x, y):
     x0 = app.speedpowerX - app.speedpowerR + x*10
@@ -232,6 +259,34 @@ def itemIntersects(app, x, y):
 
     return False
 
+# checks if the level is solvable
+def isSolvable(app):
+    # deterimines the shortest platform
+    minimumPlat = -1000
+    for platform in app.platforms:
+        if platform[1] > minimumPlat:
+            minimumPlat = platform[1]
+    
+    # if the shortest platform does not reach player max jump height, check if any 
+    if minimumPlat < app.playerY+110:
+        for tp in app.tppoweritems:
+            if tp[3] < app.playerY-2*app.r-110:
+                # if there exists a tp item that is out of reach, than randomize all objects again
+                app.platformCells = []
+                randomizePlatform(app)
+                app.platforms = []
+                platformBoundsfromCell(app)
+                app.enemyCells = []
+                app.enemyOnPlatform = []
+                randomizeEnemies(app)
+                app.originalenemies = []
+                app.modifiedenemies = []
+                enemyBoundsFromCell(app)
+                app.itemIntersection = True
+                isValidPowerPosition(app)
+                app.tppoweritems = []
+                randomizeTPItem(app)
+    
 # checks if the player and platform intersect
 def boundsIntersect(app, player, platform):
     (dx0, dy0, dx1, dy1) = player
@@ -372,7 +427,7 @@ def keyPressed(app, event):
             else:
                 app.gameMargin += app.scrollSpeed
         # if teleportation power is consumed, space activates teleporting
-        elif event.key == 'Space' and app.playerColor == 'purple':
+        elif event.key == 'r' and app.playerColor == 'purple':
             app.playerY -= 112
             app.scrollX += 50
             app.gameMargin += 50
@@ -404,7 +459,7 @@ def keyPressed(app, event):
                 app.playerScrollX -= app.scrollSpeed
                 app.isGameOver = True
         # if teleportation power is consumed, space activates teleporting
-        elif event.key == 'Space' and app.playerColor == 'purple':
+        elif event.key == 'r' and app.playerColor == 'purple':
             app.playerY -= 112
             app.playerX += 50
             app.playerScrollX += 50
@@ -558,6 +613,11 @@ def redrawAll(app, canvas):
         # canvas.create_line(0, 193.333, app.width, 193.333, fill='blue')
         # canvas.create_line(0, 210, app.width, 210, fill='red')
     
+    # Drawing grid
+    # for row in range(app.rows):
+    #     for col in range(app.cols):
+    #         (x0, y0, x1, y1) = getCellBounds(app, row, col)
+    #         canvas.create_rectangle(x0, y0, x1, y1, outline='black')
 
 runApp(width=600, height=300) 
 

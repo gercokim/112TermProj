@@ -140,6 +140,10 @@ def randomizeTPItem(app):
         app.tppoweritems.append([app.speedpowerX - app.speedpowerR+x*10, app.speedpowerY - 2*app.speedpowerR - y*10,
                                  app.speedpowerX + app.speedpowerR+x*10, app.speedpowerY - y*10])
 
+
+def randomizeTPItem2(app):
+    while len(app.tppoweritems) < 3:
+        return
 # checks if the tp items itersect with each other or any other object
 def itemIntersects(app, x, y):
     
