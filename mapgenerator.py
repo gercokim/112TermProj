@@ -37,6 +37,14 @@ def appStarted(app):
     app.enemyCells = []
     app.enemyOnPlatform = []
     randomizeEnemies(app)
+    app.speedpowerX = app.width/6
+    app.speedpowerY = app.height-app.height/10
+    app.speedpowerR = 10
+    app.speedPowerRandomX = 0
+    app.speedPowerRandomY = 0
+    app.itemIntersection = True
+    randomizeSpeedPower(app)
+    app.tppoweritems = []
 
 # retrieves the bounds of the cell in coordinates
 def getCellBounds(app, row, col):
@@ -102,7 +110,41 @@ def enemyIntersects(app, x0, x1, y0, y1):
             if app.enemyCells[enemy][1] < y0 < app.enemyCells[enemy][3]+2 or app.enemyCells[enemy][1]-2 < y1 < app.enemyCells[enemy][3]:
                 return True
     return False
+
+# randomizes positional values for speed power up
+def randomizeSpeedPower(app):
+    app.speedPowerRandomX = random.randint(8, 30)
+    app.speedPowerRandomY = random.randint(5, 20)
+
+# checks if the randomly generated position of the item is valid
+# def isValidItemPosition(app):
+#     while app.itemIntersection:
+#         randomizeSpeedPower(app)
+#         if itemsIntersect(app):
+#             continue
+#         app.itemIntersection = False
+
+# def itemsIntersect(app):
+#     x0 = app.speedpowerX - app.speedpowerR+app.speedPowerRandomX*10
+#     x1 = app.speedpowerX + app.speedpowerR+app.speedPowerRandomX*10
+#     y0 = app.speedpowerY - 2*app.speedpowerR-app.speedPowerRandomY*10
+#     y1 = app.speedpowerY-app.speedPowerRandomY*10
+
+# randomizes positions of the 3 tp items
+def randomizeTPItem(app):
+    while len(app.tppoweritems) < 3:
+        x = random.randint(8, 50)
+        y = random.randint(5, 20)
+        if len(app.tppoweritems) != 0 and not itemIntersects(app, x, y):
+            continue
+        app.tppoweritems.append([app.speedpowerX - app.speedpowerR+x*10, app.speedpowerY - 2*app.speedpowerR - y*10,
+                                 app.speedpowerX + app.speedpowerR+x*10, app.speedpowerY - y*10])
+
+# checks if the tp items itersect with each other or any other object
+def itemIntersects(app, x, y):
     
+    return
+
 def redrawAll(app, canvas):
     # Drawing grid
     # for row in range(app.rows):
@@ -132,4 +174,12 @@ def redrawAll(app, canvas):
                 (x0, y0, x1, y1) = getCellBounds(app, row, col)
                 canvas.create_rectangle(x0, y0, x1, y1, outline='black', fill='yellow')
 
+    # canvas.create_oval(app.speedpowerX - app.speedpowerR+app.speedPowerRandomX*10, app.speedpowerY - 2*app.speedpowerR-app.speedPowerRandomY*10, 
+    #               app.speedpowerX + app.speedpowerR+app.speedPowerRandomX*10, app.speedpowerY-app.speedPowerRandomY*10, fill='blue')
+    canvas.create_oval(app.speedpowerX - app.speedpowerR, app.speedpowerY - 2*app.speedpowerR-50, 
+                  app.speedpowerX + app.speedpowerR, app.speedpowerY-50, fill='blue')
+    canvas.create_rectangle(app.speedpowerX - app.speedpowerR, app.speedpowerY - 2*app.speedpowerR-50, 
+                            app.speedpowerX + app.speedpowerR, app.speedpowerY-50, outline='red')
+
+    canvas.create_oval(app.speedpowerX - app.speedpowerR, app.speedpowerY - 2*app.speedpowerR, app.speedpowerX + app.speedpowerR, app.speedpowerY, fill='purple')
 runApp(width=600, height=300)

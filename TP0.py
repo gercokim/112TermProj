@@ -30,17 +30,6 @@ def appStarted(app):
     app.speedpowerX = app.width/6
     app.speedpowerY = app.height-app.height/10
     app.speedpowerTouch = False
-    app.tppoweritems = [[app.speedpowerX - app.speedpowerR+app.width/2, 
-                        app.speedpowerY - 2*app.speedpowerR, 
-                        app.speedpowerX + app.speedpowerR+app.width/2, app.speedpowerY],
-                        [app.speedpowerX - app.speedpowerR+app.width/2+5*app.r, 
-                        app.speedpowerY - 2*app.speedpowerR-4*app.r, 
-                        app.speedpowerX + app.speedpowerR+app.width/2+5*app.r, app.speedpowerY-4*app.r],
-                        [app.speedpowerX - app.speedpowerR+app.width/2+5*app.r, 
-                        app.speedpowerY - 2*app.speedpowerR, 
-                        app.speedpowerX + app.speedpowerR+app.width/2+5*app.r, app.speedpowerY]]
-    app.tppowerTouch = [False, False, False]
-    app.tppower = False
     app.scrollSpeed = 10
     app.timeTouched = 0
     app.enemyX = app.width/5
@@ -51,6 +40,14 @@ def appStarted(app):
     app.originalenemies = []
     app.modifiedenemies = []
     enemyBoundsFromCell(app)
+    app.speedPowerRandomX = 0
+    app.speedPowerRandomY = 0
+    app.itemIntersection = True
+    isValidPowerPosition(app)
+    app.tppoweritems = []
+    app.tppowerTouch = [False, False, False]
+    app.tppower = False
+    randomizeTPItem(app)
     app.playerDied = False
     app.level = 1
     app.levelCounter = 1
@@ -71,8 +68,8 @@ def enemyBounds(app, enemy):
 
 # returns the bounds of speed power
 def speedpowerBounds(app):
-    cx0, cy0 = (app.speedpowerX - app.speedpowerR, app.speedpowerY - 2*app.speedpowerR)
-    cx1, cy1 = (app.speedpowerX + app.speedpowerR, app.speedpowerY)
+    cx0, cy0 = (app.speedpowerX - app.speedpowerR+app.speedPowerRandomX*10, app.speedpowerY - 2*app.speedpowerR-app.speedPowerRandomY*10)
+    cx1, cy1 = (app.speedpowerX + app.speedpowerR+app.speedPowerRandomX*10, app.speedpowerY-app.speedPowerRandomY*10)
     return (cx0, cy0, cx1, cy1)
 
 # returns the bounds of teleportation power
@@ -114,7 +111,7 @@ def platformIntersects(app, x0, x1, y0, y1):
         return True
     return False
 
-# returns the actual coordinates of the platform from the cell bounds
+# returns the actual coordinates of the platforms from the cell bounds
 def platformBoundsfromCell(app):
     for platform in app.platformCells:
         x0, y0, x1, y1 = platform
@@ -137,7 +134,7 @@ def randomizeEnemies(app):
     while 3 <= len(app.enemyCells) < 6:
         x1 = 27
         x0 = x1-3
-        y0 = random.randint(5, 80)
+        y0 = random.randint(8, 80)
         y1 = y0+3
         if len(app.enemyCells) != 3 and enemyIntersects(app, x0, x1, y0, y1):
             continue
@@ -151,14 +148,89 @@ def enemyIntersects(app, x0, x1, y0, y1):
         if enemy < len(app.enemyCells):
             if (app.enemyCells[enemy][1] < y0 < app.enemyCells[enemy][3]+2 or 
                 app.enemyCells[enemy][1]-2 < y1 < app.enemyCells[enemy][3]):
-                return True
+                return True           
     return False
 
+# returns the actual coordinates of the enemies from the cell bounds
 def enemyBoundsFromCell(app):
     for enemy in app.enemyCells:
         x0, y0, x1, y1 = enemy
         app.originalenemies.append((y0*10, x0*10, y1*10, x1*10)) 
         app.modifiedenemies.append([y0*10, x0*10, y1*10, x1*10])
+
+# randomizes positional values for speed power up
+def randomizeSpeedPower(app):
+    app.speedPowerRandomX = random.randint(8, 30)
+    app.speedPowerRandomY = random.randint(5, 20)
+
+# checks if the randomly generated position of the powerup is valid
+def isValidPowerPosition(app):
+    while app.itemIntersection:
+        randomizeSpeedPower(app)
+        if powerIntersects(app):
+            continue
+        else:
+            app.itemIntersection = False
+
+# checks if the powerup intersects with an enemy or platform
+def powerIntersects(app):
+    x0, y0, x1, y1 = speedpowerBounds(app)
+    # checks intersection with platform
+    for platform in app.platforms:
+        if ((platform[1] <= y0 <= platform[3] or platform[1] <= y1 <= platform[3]) and 
+            (platform[0] <= x0 <= platform[2] or platform[0] <= x1 <= platform[2])):
+            return True
+    
+    # checks intersection with enemy
+    for enemy in app.originalenemies:
+        if ((enemy[1] <= y0 <= enemy[3] or enemy[1] <= y1 <= enemy[3]) and 
+            (enemy[0] <= x0 <= enemy[2] or enemy[0] <= x1 <= enemy[2])):
+            return True
+    return False
+
+# randomizes positions of the 3 tp items
+def randomizeTPItem(app):
+    while len(app.tppoweritems) < 3:
+        x = random.randint(8, 50)
+        y = random.randint(5, 20)
+        if len(app.tppoweritems) != 0 and itemIntersects(app, x, y):
+            continue
+        app.tppoweritems.append([app.speedpowerX - app.speedpowerR+x*10, app.speedpowerY - 2*app.speedpowerR - y*10,
+                                 app.speedpowerX + app.speedpowerR+x*10, app.speedpowerY - y*10])
+
+# checks if the tp items itersect with each other or any other object
+def itemIntersects(app, x, y):
+    x0 = app.speedpowerX - app.speedpowerR + x*10
+    x1 = app.speedpowerX + app.speedpowerR + x*10
+    y0 = app.speedpowerY - 2*app.speedpowerR - y*10
+    y1 = app.speedpowerY - y*10
+
+    # checks intersection with platform
+    for platform in app.platforms:
+        if ((platform[1] <= y0 <= platform[3] or platform[1] <= y1 <= platform[3]) and 
+            (platform[0] <= x0 <= platform[2] or platform[0] <= x1 <= platform[2])):
+            return True
+
+    # checks intersection with enemy
+    for enemy in app.originalenemies:
+        if ((enemy[1] <= y0 <= enemy[3] or enemy[1] <= y1 <= enemy[3]) and 
+            (enemy[0] <= x0 <= enemy[2] or enemy[0] <= x1 <= enemy[2])):
+            return True
+    
+    # checks intersection with powerup
+    dx0, dy0, dx1, dy1 = speedpowerBounds(app)
+    if ((dy0 <= y0 <= dy1 or dy0 <= y1 <= dy1) and 
+        (dx0 <= x0 <= dx1 or dx0 <= x1 <= dx1)): 
+            return True
+    
+    # checks intersection with other tp items
+    for tp in app.tppoweritems:
+        tx0, ty0, tx1, ty1 = tp
+        if ((ty0 <= y0 <= ty1 or ty0 <= y1 <= ty1) and 
+            (tx0 <= x0 <= tx1 or tx0 <= x1 <= tx1)):
+            return True
+
+    return False
 
 # checks if the player and platform intersect
 def boundsIntersect(app, player, platform):
@@ -326,7 +398,8 @@ def keyPressed(app, event):
             #app.gameTimer += 10
             app.playerScrollX += app.scrollSpeed
             app.playerX += app.scrollSpeed
-            if app.playerScrollX >= app.width/1.15 and touchGround(app, playerBound):
+            # ends game if they reached the final platform and retrieved all three tp items
+            if app.playerScrollX >= app.width/1.15 and touchGround(app, playerBound) and app.tppowerTouch == [True, True, True]:
                 app.playerX -= app.scrollSpeed
                 app.playerScrollX -= app.scrollSpeed
                 app.isGameOver = True
@@ -375,7 +448,6 @@ def timerFired(app):
     # in the case that the player is not standing on any surface, onPlatform is false
     app.onPlatform = False
 
-        
 # Player jumps after space is pressed
 def doStep(app):
     playerBound = playerBounds(app)
@@ -418,26 +490,6 @@ def enemyStep(app, enemy):
         
 
 def redrawAll(app, canvas):
-    # Game started text
-    if app.gameTimer <= 10:
-        canvas.create_text(app.width/2, app.height/5, text='Level Start!', font='Didot 25 bold', fill='purple')
-    
-    # Level Complete text
-    if app.isGameOver and app.level != 2:
-        canvas.create_text(app.width/2, app.height/5, text='Level Complete!', font='Didot 25 bold', fill='purple')
-        canvas.create_text(app.width/2, app.height/3, text="Press 'C' to continue!", font='Didot 25 bold', fill='purple')
-    
-    # Game Beaten text
-    if app.level == 2 and app.isGameOver:
-        canvas.create_text(app.width/2, app.height/5, text='You have Escaped!', font='Didot 25 bold', fill='purple')
-        canvas.create_text(app.width/2, app.height/3, text="Press 'R' to play again!", font='Didot 25 bold', fill='purple')
-
-
-    # Player Death text
-    if app.playerDied:
-        canvas.create_text(app.width/2, app.height/5, text='Game Over!', font='Didot 25 bold', fill='purple')
-        canvas.create_text(app.width/2, app.height/3, text="Press 'R' to restart!", font='Didot 25 bold', fill='purple')
-
     # More efficient platform drawing
     for platform in app.platformCells:
         row0, col0, row1, col1 = platform
@@ -457,7 +509,7 @@ def redrawAll(app, canvas):
     # Drawing PowerUps/Items
 
     # Blue is speed
-    if app.speedpowerTouch == False: 
+    if app.itemIntersection == False and app.speedpowerTouch == False: 
         px0, py0, px1, py1 = speedpowerBounds(app)
         canvas.create_oval(px0, py0, px1, py1, fill='blue', outline='black')
 
@@ -480,6 +532,25 @@ def redrawAll(app, canvas):
     # Temporary dot character
     (cx0, cy0, cx1, cy1) = playerBounds(app)
     canvas.create_oval(cx0, cy0, cx1, cy1, fill=app.playerColor, outline='black')
+    
+    # Game started text
+    if app.gameTimer <= 10:
+        canvas.create_text(app.width/2, app.height/5, text='Level Start!', font='Didot 25 bold', fill='purple')
+    
+    # Level Complete text
+    if app.isGameOver and app.level != 2:
+        canvas.create_text(app.width/2, app.height/5, text='Level Complete!', font='Didot 25 bold', fill='purple')
+        canvas.create_text(app.width/2, app.height/3, text="Press 'C' to continue!", font='Didot 25 bold', fill='purple')
+    
+    # Game Beaten text
+    if app.level == 2 and app.isGameOver:
+        canvas.create_text(app.width/2, app.height/5, text='You have Escaped!', font='Didot 25 bold', fill='purple')
+        canvas.create_text(app.width/2, app.height/3, text="Press 'R' to play again!", font='Didot 25 bold', fill='purple')
+
+    # Player Death text
+    if app.playerDied:
+        canvas.create_text(app.width/2, app.height/5, text='Game Over!', font='Didot 25 bold', fill='purple')
+        canvas.create_text(app.width/2, app.height/3, text="Press 'R' to restart!", font='Didot 25 bold', fill='purple')
 
     # For debugging purposes
         # canvas.create_line(280, 0, 280, app.height, fill='black')
