@@ -24,11 +24,19 @@ import random
 
 # in the actual game file, max level x distance is 1200, so platform columns should be limited to <= 108 cells
 
+# enemy ideas
+    # max enemies will be 6 for now
+    # enemy rows = 4
+    # enemy cols = 2
+
 def appStarted(app):
     app.rows = app.height//10
     app.cols = app.width//10
-    app.platforms = [] 
+    app.platformCells = [] 
     randomizePlatform(app)
+    app.enemyCells = []
+    app.enemyOnPlatform = []
+    randomizeEnemies(app)
 
 # retrieves the bounds of the cell in coordinates
 def getCellBounds(app, row, col):
@@ -42,26 +50,59 @@ def getCellBounds(app, row, col):
 
 # randomizes the positions of the platforms at the start of each level
 def randomizePlatform(app):
-    while len(app.platforms) < 5:
+    while len(app.platformCells) < 5:
         x0 = random.randint(7, 20)
         x1 = x0+2
         y0 = random.randint(8, 45)
         y1 = y0+random.randint(5, 15)
-        print(x0, y0, x1, y1, app.platforms)
-        if len(app.platforms) != 0 and platformIntersects(app, x0, x1, y0, y1):
+        print(x0, y0, x1, y1, app.platformCells)
+        if len(app.platformCells) != 0 and platformIntersects(app, x0, x1, y0, y1):
             continue
-        app.platforms.append((x0, y0, x1, y1))
+        app.platformCells.append((x0, y0, x1, y1))
 
 # checks if the randomized platform intersects with the latest platform added to the list
 def platformIntersects(app, x0, x1, y0, y1):
-    if (app.platforms[-1][0] <= x0 <= app.platforms[-1][2] or 
-        app.platforms[-1][0] <= x1 <= app.platforms[-1][2]):
+    if (app.platformCells[-1][0] < x0 < app.platformCells[-1][2] or 
+        app.platformCells[-1][0] < x1 < app.platformCells[-1][2]):
         return True
     # if (app.platforms[-1][1] <= y0 < (app.platforms[-1][3]+3) or 
     #     (y1+3) > app.platforms[-1][1]):
     #     return True
     return False
 
+# randomizes positions of enemies
+def randomizeEnemies(app):
+    #randomizes positions of platform enemies
+    while len(app.enemyCells) < 3:
+        platform = random.randint(0, 4)
+        if platform not in app.enemyOnPlatform:
+            app.enemyOnPlatform.append(platform)
+            x1 = app.platformCells[platform][0]
+            x0 = x1-3
+            y0 = app.platformCells[platform][1]
+            y1 = y0+3
+            app.enemyCells.append((x0, y0, x1, y1))
+    
+    #randomizes positions of ground enemies
+    while 3 <= len(app.enemyCells) < 6:
+        x1 = 27
+        x0 = x1-3
+        y0 = random.randint(5, 57)
+        y1 = y0+3
+        if len(app.enemyCells) != 3 and enemyIntersects(app, x0, x1, y0, y1):
+            continue
+        app.enemyCells.append((x0, y0, x1, y1))
+
+# checks if ground enemies intersect when randomized
+def enemyIntersects(app, x0, x1, y0, y1):
+    if len(app.enemyCells) == 3:
+        return True
+    for enemy in range(3, 6):
+        if enemy < len(app.enemyCells):
+            if app.enemyCells[enemy][1] < y0 < app.enemyCells[enemy][3]+2 or app.enemyCells[enemy][1]-2 < y1 < app.enemyCells[enemy][3]:
+                return True
+    return False
+    
 def redrawAll(app, canvas):
     # Drawing grid
     # for row in range(app.rows):
@@ -74,20 +115,21 @@ def redrawAll(app, canvas):
         for col in range(60):
             (x0, y0, x1, y1) = getCellBounds(app, row, col)
             canvas.create_rectangle(x0, y0, x1, y1, outline='green', fill='green')
-    
-    # drawing platforms with cells
-    # for row in range(15, 17):
-    #     for col in range(8, 15):
-    #         (x0, y0, x1, y1) = getCellBounds(app, row, col)
-    #         canvas.create_rectangle(x0, y0, x1, y1, outline='black', fill='black')
-   #print(app.platforms)
 
    # draws all the randomized platforms
-    for platform in app.platforms:
+    for platform in app.platformCells:
         row0, col0, row1, col1 = platform
         for row in range(row0, row1):
             for col in range(col0, col1):
                 (x0, y0, x1, y1) = getCellBounds(app, row, col)
                 canvas.create_rectangle(x0, y0, x1, y1, outline='black', fill='black')
+    
+    # Drawing randomized enemies
+    for enemy in app.enemyCells:
+        row0, col0, row1, col1 = enemy
+        for row in range(row0, row1):
+            for col in range(col0, col1):
+                (x0, y0, x1, y1) = getCellBounds(app, row, col)
+                canvas.create_rectangle(x0, y0, x1, y1, outline='black', fill='yellow')
 
 runApp(width=600, height=300)

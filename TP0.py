@@ -1,5 +1,6 @@
 from cmu_112_graphics import *
 import math
+import random
 
 def appStarted(app):
     app.cx = app.width/3
@@ -16,12 +17,12 @@ def appStarted(app):
     app.paused = False
     app.playerTimer = 28 
     app.ground = (0, app.height-app.height/10, app.width, app.height)
-    app.platforms = [(app.width/2+1.5*app.width/10, app.height/2.25, 
-                     app.width/1.5+1.5*app.width/10, app.height/2), 
-                     (app.width/2-app.width/5, app.height/2.25+app.height/5, 
-                     app.width/1.5-app.width/5, app.height/2+app.height/5),
-                     (app.width/2+app.width/2, app.height/2.25+app.height/5, 
-                     app.width/1.5+app.width/2, app.height/2+app.height/5)]
+    app.platformCells = []
+    randomizePlatform(app)
+    app.platforms = []
+    platformBoundsfromCell(app)
+    app.rows = app.height//10
+    app.cols = app.width//10
     app.platformNum = len(app.platforms)
     app.platformSpacing = 90
     app.onPlatform = False
@@ -44,15 +45,15 @@ def appStarted(app):
     app.timeTouched = 0
     app.enemyX = app.width/5
     app.enemyY = app.width/5
-    app.originalenemies = [[app.enemyX-10+75, app.height/2.25+app.height/5-30, 
-                    app.enemyX+10+75, app.height/2.25+app.height/5],
-                    [app.enemyX-10+180, app.height-app.height/10-30, 
-                    app.enemyX+10+180, app.height-app.height/10]]
-    app.modifiedenemies = [[app.enemyX-10+75, app.height/2.25+app.height/5-30, 
-                    app.enemyX+10+75, app.height/2.25+app.height/5],
-                    [app.enemyX-10+180, app.height-app.height/10-30, 
-                    app.enemyX+10+180, app.height-app.height/10]]
+    app.enemyCells = []
+    app.enemyOnPlatform = []
+    randomizeEnemies(app)
+    app.originalenemies = []
+    app.modifiedenemies = []
+    enemyBoundsFromCell(app)
     app.playerDied = False
+    app.level = 1
+    app.levelCounter = 1
 
 # returns bounds of the player
 def playerBounds(app):
@@ -78,6 +79,87 @@ def speedpowerBounds(app):
 def tppowerBounds(app, item):
     return app.tppoweritems[item]
 
+# retrieves the bounds of the cell in coordinates
+def getCellBounds(app, row, col):
+    cellWidth = app.width / app.cols
+    cellHeight = app.height / app.rows
+    x0 = col*cellWidth
+    x1 = (col+1)*cellWidth
+    y0 = row*cellHeight
+    y1 = (row+1)*cellHeight
+    return (x0, y0, x1, y1)
+
+# randomizes the positions of the platforms at the start of each level
+def randomizePlatform(app):
+    while len(app.platformCells) < 5:
+        x0 = random.randint(7, 21)
+        x1 = x0+2
+        y0 = random.randint(5, 75)
+        y1 = y0+random.randint(8, 15)
+        print(x0, y0, x1, y1, app.platformCells)
+        if len(app.platformCells) != 0 and platformIntersects(app, x0, x1, y0, y1):
+            continue
+        app.platformCells.append((x0, y0, x1, y1))
+
+# checks if the randomized platform intersects with the latest platform added to the list
+def platformIntersects(app, x0, x1, y0, y1):
+    # for platform in app.platformCells:
+    #     if (platform[0] <= x0 <= platform[2]+1 or 
+    #         platform[0]-1 <= x1 <= platform[2]):
+    #         return True
+        # if (platform[1] <= y0 < (platform[3]+3) or 
+        #     (y1+3) > platform[1]):
+        #     return True
+    if app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 or app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]:
+        return True
+    return False
+
+# returns the actual coordinates of the platform from the cell bounds
+def platformBoundsfromCell(app):
+    for platform in app.platformCells:
+        x0, y0, x1, y1 = platform
+        app.platforms.append((y0*10, x0*10, y1*10, x1*10))
+
+# randomizes positions of enemies
+def randomizeEnemies(app):
+    #randomizes positions of platform enemies
+    while len(app.enemyCells) < 3:
+        platform = random.randint(0, 4)
+        if platform not in app.enemyOnPlatform:
+            app.enemyOnPlatform.append(platform)
+            x1 = app.platformCells[platform][0]
+            x0 = x1-3
+            y0 = app.platformCells[platform][1]
+            y1 = y0+3
+            app.enemyCells.append((x0, y0, x1, y1))
+    
+    #randomizes positions of ground enemies
+    while 3 <= len(app.enemyCells) < 6:
+        x1 = 27
+        x0 = x1-3
+        y0 = random.randint(5, 80)
+        y1 = y0+3
+        if len(app.enemyCells) != 3 and enemyIntersects(app, x0, x1, y0, y1):
+            continue
+        app.enemyCells.append((x0, y0, x1, y1))
+
+# checks if ground enemies intersect when randomized
+def enemyIntersects(app, x0, x1, y0, y1):
+    if len(app.enemyCells) == 3:
+        return True
+    for enemy in range(3, 6):
+        if enemy < len(app.enemyCells):
+            if (app.enemyCells[enemy][1] < y0 < app.enemyCells[enemy][3]+2 or 
+                app.enemyCells[enemy][1]-2 < y1 < app.enemyCells[enemy][3]):
+                return True
+    return False
+
+def enemyBoundsFromCell(app):
+    for enemy in app.enemyCells:
+        x0, y0, x1, y1 = enemy
+        app.originalenemies.append((y0*10, x0*10, y1*10, x1*10)) 
+        app.modifiedenemies.append([y0*10, x0*10, y1*10, x1*10])
+
 # checks if the player and platform intersect
 def boundsIntersect(app, player, platform):
     (dx0, dy0, dx1, dy1) = player
@@ -88,6 +170,7 @@ def boundsIntersect(app, player, platform):
     
 #(px0 <= dx1+app.scrollX <= px1)
 
+# checks if the enemy has collided with the player
 def enemyHitPlayer(app, player, enemy):
     (dx0, dy0, dx1, dy1) = player
     (px0, py0, px1, py1) = enemy
@@ -96,7 +179,7 @@ def enemyHitPlayer(app, player, enemy):
 # checks if the player is on ground
 def touchGround(app, player):
     (dx0, dy0, dx1, dy1) = player
-    return dy1 == app.ground[1]
+    return 0 <= dy1 - app.ground[1] < 5
 
 # Testing boundsIntersect conditions
 #(py0 <= dy1 <= py1)    
@@ -128,8 +211,20 @@ def isPlayerCenter(app):
 #         return True
 
 def keyPressed(app, event):
+    print(app.playerY)
+    # allows player to restart if hit by enemy
     if app.playerDied and event.key == 'r':
         appStarted(app)
+    
+    # allows player to continue playing after beating a level
+    if app.isGameOver and event.key == 'c':
+        appStarted(app)
+        app.level+=1
+    
+    # allows player to play again
+    if app.isGameOver and app.level == 2 and event.key == 'r':
+        appStarted(app)
+
     # increases speed if the player consumes speed powerup
     if app.speedpowerTouch == False and touchSpeed(app, playerBounds(app), speedpowerBounds(app)):
         app.scrollSpeed = 20
@@ -191,7 +286,7 @@ def keyPressed(app, event):
             for enemy in range(len(app.modifiedenemies)):
                 app.modifiedenemies[enemy][0] -= app.scrollSpeed
                 app.modifiedenemies[enemy][2] -= app.scrollSpeed
-            if app.gameMargin > app.width: # prevents player as well as any other itemsfrom going beyond game margins
+            if app.gameMargin > app.width/1.5: # prevents player as well as any other itemsfrom going beyond game margins
                 app.scrollX -= app.scrollSpeed
                 app.playerX += app.scrollSpeed
                 app.playerScrollX += app.scrollSpeed
@@ -266,9 +361,9 @@ def timerFired(app):
     if touchGround(app, playerBound):
         app.onPlatform = True
         return
+
     for platform in range(app.platformNum):
         platformBound = platformBounds(app, platform)
-        print(boundsIntersect(app, playerBound, platformBound))
         # if player is standing on platform, the player stops the jump animation
         if boundsIntersect(app, playerBound, platformBound) == True:
             app.paused = False
@@ -297,19 +392,17 @@ def downStep(app):
         app.playerY += 8
 
 # testing different versions of downStep 
-def downStep2(app):
-    playerBound = playerBounds(app)
-    bounds = app.platforms[1][1] <= playerBound[3] <= app.platforms[1][3]
-    print(app.platforms[1][1], playerBound[3], app.platforms[1][3], bounds)
-    if app.platforms[1][1] <= playerBound[3] <= app.platforms[1][3]:
-        print('stop down')
-    else:
-        if not touchGround(app, playerBound):
-            app.playerY += 1
+# def downStep2(app):
+#     playerBound = playerBounds(app)
+#     bounds = app.platforms[1][1] <= playerBound[3] <= app.platforms[1][3]
+#     if app.platforms[1][1] <= playerBound[3] <= app.platforms[1][3]:
+#         pass
+#     else:
+#         if not touchGround(app, playerBound):
+#             app.playerY += 1
 
 # moves enemy
 def enemyStep(app, enemy):
-    print(app.modifiedenemies[0][0])
     for platform in range(app.platformNum):
         platformBound = platformBounds(app, platform)    
         if boundsIntersect(app, app.originalenemies[enemy], platformBound):
@@ -330,27 +423,37 @@ def redrawAll(app, canvas):
         canvas.create_text(app.width/2, app.height/5, text='Level Start!', font='Didot 25 bold', fill='purple')
     
     # Level Complete text
-    if app.isGameOver:
+    if app.isGameOver and app.level != 2:
         canvas.create_text(app.width/2, app.height/5, text='Level Complete!', font='Didot 25 bold', fill='purple')
-   
+        canvas.create_text(app.width/2, app.height/3, text="Press 'C' to continue!", font='Didot 25 bold', fill='purple')
+    
+    # Game Beaten text
+    if app.level == 2 and app.isGameOver:
+        canvas.create_text(app.width/2, app.height/5, text='You have Escaped!', font='Didot 25 bold', fill='purple')
+        canvas.create_text(app.width/2, app.height/3, text="Press 'R' to play again!", font='Didot 25 bold', fill='purple')
+
+
     # Player Death text
     if app.playerDied:
         canvas.create_text(app.width/2, app.height/5, text='Game Over!', font='Didot 25 bold', fill='purple')
         canvas.create_text(app.width/2, app.height/3, text="Press 'R' to restart!", font='Didot 25 bold', fill='purple')
 
     # More efficient platform drawing
-    for platform in range(app.platformNum):
-        (x0, y0, x1, y1) = platformBounds(app, platform)
-        canvas.create_rectangle(x0-app.scrollX, y0, x1-app.scrollX, y1, fill='black', outline='black')
+    for platform in app.platformCells:
+        row0, col0, row1, col1 = platform
+        for row in range(row0, row1):
+            for col in range(col0, col1):
+                (x0, y0, x1, y1) = getCellBounds(app, row, col)
+                canvas.create_rectangle(x0-app.scrollX, y0, x1-app.scrollX, y1, outline='black', fill='black')
 
-    print(platformBounds(app, 2))
     # Basic ground level
     canvas.create_rectangle(0, app.height-app.height/10, app.width, app.height, 
                             fill='green', outline='black')
 
     # Final platform to end game
-    canvas.create_rectangle(2*app.width-100-app.scrollX, app.height/2.25+app.height/2.2,
-                            2*app.width-app.scrollX, app.height/2+app.height/2.2, fill='blue', outline='black')
+    canvas.create_rectangle(app.width/2+app.width-app.scrollX, app.height/2.25+app.height/2.2,
+                            app.width/1.5+app.width-app.scrollX, app.height/2+app.height/2.2, fill='blue', outline='black')
+    
     # Drawing PowerUps/Items
 
     # Blue is speed
@@ -365,13 +468,13 @@ def redrawAll(app, canvas):
             canvas.create_oval(tx0, ty0, tx1, ty1, fill='purple', outline='black')
     
    
-    # Drawing Enemies
+    # Drawing randomized enemies
     for enemy in range(len(app.modifiedenemies)):
         ex0, ey0, ex1, ey1 = enemyBounds(app, enemy)
         canvas.create_rectangle(ex0, ey0, ex1, ey1, fill='yellow', outline='black')
     
     # Debugging Text
-    canvas.create_text(app.width/2, app.height/10, text=f'ScrollX = {app.gameMargin}', font='Arial 15 bold', fill='black')
+    canvas.create_text(app.width/2, app.height/10, text=f'Level : {app.level}', font='Arial 15 bold', fill='black')
     canvas.create_text(app.width/2, app.height/20, text=f'gameMargin = {app.timeTouched}', font='Arial 15 bold', fill='black')
 
     # Temporary dot character
