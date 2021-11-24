@@ -94,7 +94,7 @@ def randomizePlatform(app):
         x1 = x0+2
         y0 = random.randint(5, 75)
         y1 = y0+random.randint(8, 15)
-        print(x0, y0, x1, y1, app.platformCells)
+        #print(x0, y0, x1, y1, app.platformCells)
         if len(app.platformCells) != 0 and platformIntersects(app, x0, x1, y0, y1):
             continue
         app.platformCells.append((x0, y0, x1, y1))
@@ -117,25 +117,32 @@ def platformIntersects(app, x0, x1, y0, y1):
     #         app.platformCells[platform][0] <= x1 <= app.platformCells[platform][2]):
     #         return True
 
+    for platform in app.platformCells:
+        if ((platform[0]-2 <= x0 <= platform[2]+2 or 
+        platform[0]-2 <= x1 <= platform[2]+2)and 
+        (platform[1]-5 <= y0 <= platform[3]+5 or
+        platform[1]-5 <= y1 <= platform[3]+5)):
+            return True
+
     # if app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]:
     #     return True
-    if ((app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and 
-        app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2])and 
-        (app.platformCells[-1][1] <= y0 <= app.platformCells[-1][2]+2 and
-        app.platformCells[-1][1]-2 <= y1 <= app.platformCells[-1][2])):
-        return True
+    # if ((app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and 
+    #     app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2])and 
+    #     (app.platformCells[-1][1] <= y0 <= app.platformCells[-1][2]+2 and
+    #     app.platformCells[-1][1]-2 <= y1 <= app.platformCells[-1][2])):
+    #     return True
 
-    if len(app.platformCells) > 1:
-        if (((app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and 
-        app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]) or
-        (app.platformCells[-2][0] <= x0 <= app.platformCells[-2][2]+2 and 
-        app.platformCells[-2][0]-2 <= x1 <= app.platformCells[-2][2]))and 
-        ((app.platformCells[-1][1] <= y0 <= app.platformCells[-1][3]+2 and
-           app.platformCells[-1][1]-2 <= y1 <= app.platformCells[-1][3]) or 
-           (app.platformCells[-2][1] <= y0 <= app.platformCells[-2][3]+2 and 
-           app.platformCells[-2][1]-2 <= y1 <= app.platformCells[-2][3]))):
-            return True
-            
+    # if len(app.platformCells) > 1:
+    #     if (((app.platformCells[-1][0] <= x0 <= app.platformCells[-1][2]+2 and 
+    #     app.platformCells[-1][0]-2 <= x1 <= app.platformCells[-1][2]) or
+    #     (app.platformCells[-2][0] <= x0 <= app.platformCells[-2][2]+2 and 
+    #     app.platformCells[-2][0]-2 <= x1 <= app.platformCells[-2][2]))and 
+    #     ((app.platformCells[-1][1] <= y0 <= app.platformCells[-1][3]+2 and
+    #        app.platformCells[-1][1]-2 <= y1 <= app.platformCells[-1][3]) or 
+    #        (app.platformCells[-2][1] <= y0 <= app.platformCells[-2][3]+2 and 
+    #        app.platformCells[-2][1]-2 <= y1 <= app.platformCells[-2][3]))):
+    #         return True
+
         # if ((app.platformCells[-1][1] <= y0 <= app.platformCells[-1][2]+2 and
         #    app.platformCells[-1][1]-2 <= y1 <= app.platformCells[-1][2]) or 
         #    (app.platformCells[-2][1] <= y0 <= app.platformCells[-2][2]+2 and 
@@ -308,7 +315,7 @@ def boundsIntersect(app, player, platform):
     (px0, py0, px1, py1) = platform
     # the reason for the 0 to 5 bounds because the incrementing of the jump animation
     # does not evenly match with the bounds of platforms
-    return (0 <= dy1-py0 < 5) and (px0 <= (dx1+dx0)/2+app.scrollX <= px1)
+    return (0 <= dy1-py0 < 6) and (px0 <= (dx1+dx0)/2+app.scrollX <= px1)
     
 #(px0 <= dx1+app.scrollX <= px1)
 
@@ -568,6 +575,9 @@ def redrawAll(app, canvas):
                 (x0, y0, x1, y1) = getCellBounds(app, row, col)
                 canvas.create_rectangle(x0-app.scrollX, y0, x1-app.scrollX, y1, outline='black', fill='black')
 
+    for platform in app.platforms:
+        print(platform)
+
     # Basic ground level
     canvas.create_rectangle(0, app.height-app.height/10, app.width, app.height, 
                             fill='green', outline='black')
@@ -605,22 +615,22 @@ def redrawAll(app, canvas):
     
     # Game started text
     if app.gameTimer <= 10:
-        canvas.create_text(app.width/2, app.height/5, text='Level Start!', font='Didot 25 bold', fill='purple')
+        canvas.create_text(app.width/2, app.height/5, text='Level Start!', font='Didot 25 bold', fill='green')
     
     # Level Complete text
     if app.isGameOver and app.level != 2:
-        canvas.create_text(app.width/2, app.height/5, text='Level Complete!', font='Didot 25 bold', fill='purple')
-        canvas.create_text(app.width/2, app.height/3, text="Press 'C' to continue!", font='Didot 25 bold', fill='purple')
+        canvas.create_text(app.width/2, app.height/5, text='Level Complete!', font='Didot 25 bold', fill='green')
+        canvas.create_text(app.width/2, app.height/3, text="Press 'C' to continue!", font='Didot 25 bold', fill='green')
     
     # Game Beaten text
     if app.level == 2 and app.isGameOver:
-        canvas.create_text(app.width/2, app.height/5, text='You have Escaped!', font='Didot 25 bold', fill='purple')
-        canvas.create_text(app.width/2, app.height/3, text="Press 'R' to play again!", font='Didot 25 bold', fill='purple')
+        canvas.create_text(app.width/2, app.height/5, text='You have Escaped!', font='Didot 25 bold', fill='green')
+        canvas.create_text(app.width/2, app.height/3, text="Press 'R' to play again!", font='Didot 25 bold', fill='green')
 
     # Player Death text
     if app.playerDied:
-        canvas.create_text(app.width/2, app.height/5, text='Game Over!', font='Didot 25 bold', fill='purple')
-        canvas.create_text(app.width/2, app.height/3, text="Press 'R' to restart!", font='Didot 25 bold', fill='purple')
+        canvas.create_text(app.width/2, app.height/5, text='Game Over!', font='Didot 25 bold', fill='green')
+        canvas.create_text(app.width/2, app.height/3, text="Press 'R' to restart!", font='Didot 25 bold', fill='green')
 
     # For debugging purposes
         # canvas.create_line(280, 0, 280, app.height, fill='black')
