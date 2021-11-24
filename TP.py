@@ -23,7 +23,7 @@ def appStarted(app):
     platformBoundsfromCell(app)
     app.rows = app.height//10
     app.cols = app.width//10
-    app.platformNum = len(app.platforms)
+    app.platformNum = 5
     app.platformSpacing = 90
     app.onPlatform = False
     app.speedpowerR = 10
@@ -315,7 +315,7 @@ def boundsIntersect(app, player, platform):
     (px0, py0, px1, py1) = platform
     # the reason for the 0 to 5 bounds because the incrementing of the jump animation
     # does not evenly match with the bounds of platforms
-    return (0 <= dy1-py0 < 6) and (px0 <= (dx1+dx0)/2+app.scrollX <= px1)
+    return (0 <= dy1-py0 < 8) and (px0 <= (dx1+dx0)/2+app.scrollX <= px1)
     
 #(px0 <= dx1+app.scrollX <= px1)
 
@@ -520,7 +520,7 @@ def timerFired(app):
             app.onPlatform = True
             return
         # if player is not on platform, the player falls to the ground
-        if app.onPlatform==False and app.paused==False and boundsIntersect(app, playerBound, platformBounds(app, platform))==False:
+        if app.onPlatform==False and app.paused==False and boundsIntersect(app, playerBound, platformBound)==False:
             downStep(app)
     # in the case that the player is not standing on any surface, onPlatform is false
     app.onPlatform = False
