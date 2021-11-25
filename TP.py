@@ -500,6 +500,7 @@ def keyPressed(app, event):
             app.playerTimer = 28
             app.paused = True
 
+# check if the player is currently on any platform
 def isPlayerOnAnyPlatform(app, player):
     for platform in app.platforms:
         if boundsIntersect(app, player, platform):
@@ -525,17 +526,21 @@ def timerFired(app):
         if enemyHitPlayer(app, playerBounds(app), app.modifiedenemies[enemy]):
             app.playerDied = True
 
+    # initiates jump animation if app.paused = true
     if app.paused:
         doStep(app)
+
     app.gameTimer += 1
     playerBound = playerBounds(app)
-    
     if touchGround(app, playerBound):
         return
+    
+    # if player is on a platform, paused = False i.e. stop jumping
     if isPlayerOnAnyPlatform(app, playerBound):
         app.paused = False
         return
 
+    # if paused = false and player is in air i.e. not on ground or platform, move down
     if not app.paused:
         downStep(app)
     
@@ -574,6 +579,7 @@ def isEnemyOnAnyPlatform2(app, enemy):
 # for given enemy, check if that enemy is on any platform
 # if so, then we proceed
 # retrieve the platform that the enemy is currently on 
+
 # moves enemy
 def enemyStep(app, enemy):
     # for enemies in app.enemyDict:
@@ -584,6 +590,7 @@ def enemyStep(app, enemy):
     direction = app.enemyDirection[app.originalenemies[enemy]]
     platform = app.enemyDict[app.originalenemies[enemy]]
     platformBound = platformBounds(app, platform)
+    # we check enemyMovement here because modifiedenemies is changing due to side scrolling
     if app.enemyMovement[enemy][2] == platformBound[2]:
         direction = -1
         app.enemyDirection[app.originalenemies[enemy]] = -1
