@@ -301,7 +301,7 @@ def isSolvable(app):
     if minimumPlat < app.playerY+112:
         for tp in app.tppoweritems:
             if tp[3] < app.playerY-2*app.r-112:
-                # if there exists a tp item that is out of reach, than randomize all objects again
+                # if there exists a tp item that is out of reach, than randomize all objects again and check solvability
                 app.platformCells = []
                 randomizePlatform(app)
                 app.platforms = []
@@ -319,6 +319,7 @@ def isSolvable(app):
                 isValidPowerPosition(app)
                 app.tppoweritems = []
                 randomizeTPItem(app)
+                isSolvable(app)
     
 # checks if the player and platform intersect
 def boundsIntersect(app, player, platform):
