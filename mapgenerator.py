@@ -141,13 +141,115 @@ def randomizeTPItem(app):
                                  app.speedpowerX + app.speedpowerR+x*10, app.speedpowerY - y*10])
 
 
-def randomizeTPItem2(app):
-    while len(app.tppoweritems) < 3:
-        return
+# def randomizeTPItem(app):
+#     while len(app.tppoweritems) < 3:
+#         platform = random.randint(0, 5)
+#         if platform in app.enemyOnPlatform:
+#             continue
+#         elif platform not in app.tppowerOnPlatform:
+#             app.tppowerOnPlatform.append(platform)
+#             x = (app.platformCells[platform][0] + app.platformCells[platform][2])/2
+#             y = app.platformCells[platform][1] + 20
+#             if len(app.tppoweritems) != 0 and itemIntersects(app, x, y):
+#                 continue
+#             app.tppoweritems.append([app.speedpowerX - app.speedpowerR+x*10, app.speedpowerY - 2*app.speedpowerR - y*10,
+#                                      app.speedpowerX + app.speedpowerR+x*10, app.speedpowerY - y*10])
+
+#     for platform in range(len(app.platforms)):
+#         if platform not in app.enemyOnPlatform:
+#             x = (app.platformCells[platform][0] + app.platformCells[platform][2])/2
+#             y = app.platformCells[platform][1] - 20
+#             if len(app.tppoweritems) != 0 and itemIntersects(app, x, y):
+#                 continue
+#             app.tppoweritems.append([app.speedpowerX - app.speedpowerR+x*10, app.speedpowerY - 2*app.speedpowerR - y*10,
+#                                     app.speedpowerX + app.speedpowerR+x*10, app.speedpowerY - y*10])
+
 # checks if the tp items itersect with each other or any other object
 def itemIntersects(app, x, y):
-    
     return
+
+def backtracking(app, L):
+    # must copy platform list into another list to non destructively modify platform list
+    if len(L) == 0:
+        return True
+    else:
+        for platform in L:
+            # check if its the lowest platform and only has 1 surrounding platorm
+            #solution = backtracking(app, L)
+            print(platform, L)
+            if platform[1] == findLowestPlatform(app): 
+                if checkPlatformPerim(app, platform) == 1:
+                    L.remove(platform)
+                    solution = backtracking(app, L)
+                    if solution != False:
+                        return True
+                    L.append(platform)
+            else:
+                if checkPlatformPerim(app, platform) == 2:
+                    L.remove(platform)
+                    solution = backtracking(app, L)
+                    if solution != False:
+                        return True
+                    L.append(platform)
+        return False
+
+
+def BFS(app):
+    queue = []
+    queue.append(app.ground)
+    count = 0
+    while len(queue) != 0:
+        current = queue.pop()
+        if current == app.finalPlatform and count == len(app.platforms)-1:
+            return True
+        nearPlatforms = platformPerim(app, current)
+        if nearPlatforms == []:
+            return False
+        newList = orderPlatform(app, nearPlatforms)
+        for plat in newList:
+            queue.insert(plat)
+            count += 1
+    return False
+
+def platformPerim(app, platform):
+    x0, y0, x1, y1 = platform
+    L = []
+    for plat in app.platforms:
+        if ((plat[0]-200 <= x0 <= plat[2]+200 or plat[0]-200 <= x1 <= plat[2]+200)
+        and plat[3]-132 <= x0 <= plat[3]+112):
+            L.append(plat)
+    return L
+
+def orderPlatform(app, L):
+    orderL = copy.deepcopy(L)
+    # employing bubble sort to sort the list of platform tuples
+    for i in range(len(orderL)):
+        for j in range(len(orderL)-1):
+            if orderL[j][0] > orderL[j+1][0]:
+                sortTuple = orderL[j]
+                orderL[j] = orderL[j+1]
+                orderL[j+1] = sortTuple
+    return orderL
+    
+
+# check 
+def checkPlatformPerim(app, platform):
+    x0, y0, x1, y1 = platform
+    count = 0
+    for plat in app.platforms:
+        if ((plat[0]-200 <= x0 <= plat[2]+200 or plat[0]-200 <= x1 <= plat[2]+200)
+        and plat[3]-132 <= x0 <= plat[3]+112):
+            count += 1
+    return count
+    
+
+
+def findLowestPlatform(app):
+    minimumPlat = -10000
+    for platform in app.platforms:
+        if platform[1] > minimumPlat:
+            minimumPlat = platform[1]
+    return minimumPlat
 
 def redrawAll(app, canvas):
     # Drawing grid

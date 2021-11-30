@@ -16,12 +16,15 @@ def appStarted(app):
     app.isGameOver = False
     app.paused = False
     app.playerTimer = 28 
-    app.ground = (0, app.height-app.height/10, app.width, app.height)
+    app.ground = (0, app.height-app.height/10, 150, app.height)
+    app.finalPlatform = (app.width//2+app.width, app.height-app.height//10,
+                                int(app.width//1.5+app.width), app.height-app.height//10+20)
     app.platformCells = []
     randomizePlatform(app)
     app.platforms = []
     platformBoundsfromCell(app)
-    app.platformColor = ['black'] * len(app.platformCells)
+    app.platforms.append(app.finalPlatform)
+    app.platformColor = ['black'] * len(app.platforms)
     app.rows = app.height//10
     app.cols = app.width//10
     app.platformNum = 5
@@ -55,7 +58,8 @@ def appStarted(app):
     app.playerDied = False
     app.level = 1
     app.levelCounter = 1
-    isSolvable(app)
+    isSolvable3(app)
+    #isSolvable(app)
     app.direction = 1
 
 
@@ -96,9 +100,9 @@ def getCellBounds(app, row, col):
 # randomizes the positions of the platforms at the start of each level
 def randomizePlatform(app):
     while len(app.platformCells) < 6:
-        x0 = random.randint(7, 22)
+        x0 = random.randint(7, 27)
         x1 = x0+2
-        y0 = random.randint(5, 75)
+        y0 = random.randint(15, 80)
         y1 = y0+random.randint(8, 15)
         if len(app.platformCells) != 0 and platformIntersects(app, x0, x1, y0, y1):
             continue
@@ -164,7 +168,7 @@ def platformBoundsfromCell(app):
 # randomizes positions of enemies
 def randomizeEnemies(app):
     #randomizes positions of platform enemies
-    while len(app.enemyCells) < 3:
+    while len(app.enemyCells) < 6:
         platform = random.randint(0, 5)
         if platform not in app.enemyOnPlatform:
             app.enemyOnPlatform.append(platform)
@@ -294,7 +298,8 @@ def randomizeAll(app):
     randomizePlatform(app)
     app.platforms = []
     platformBoundsfromCell(app)
-    app.platformColor = ['black'] * len(app.platformCells)
+    app.platforms.append(app.finalPlatform)
+    app.platformColor = ['black'] * len(app.platforms)
     app.enemyCells = []
     app.enemyOnPlatform = []
     app.enemyDict = dict()
@@ -326,6 +331,70 @@ def isSolvable(app):
                 randomizeAll(app)
                 isSolvable(app)
     
+
+# checks if the level is solvable
+def isSolvable3(app):
+    print(app.platforms)
+    print("hi")
+    while BFS(app) == False:
+        randomizeAll(app)
+        BFS(app)
+    
+# checks if all platforms are reachable from start to end using BFS
+def BFS(app):
+    queue = []
+    queue.append(app.ground)
+    platformDict = {}
+    # adds all platforms to dict with respective counter set to 0
+    for platform in app.platforms:
+        platformDict[platform] = 0
+    # loops through the queue and adds all children of current platform (children are all reachable platforms)
+    while len(queue) != 0:
+        current = queue.pop()
+        # when final platform is reached, break out of queue
+        if current == app.finalPlatform:
+            break
+        # obtains all children of current platform 
+        nearPlatforms = platformPerim(app, current)
+        # if no reachable platforms exists on the current platform, then level is not solvable
+        if nearPlatforms == []:
+            return False
+        # orders platforms by x0 value
+        newList = orderPlatform(app, nearPlatforms)
+        # adds all reachable platforms to the queue if they have not been reached already
+        for plat in newList:
+            if platformDict[plat] == 0:
+                queue.insert(0, plat)
+                platformDict[plat] = 1
+    # checks if any platforms have not been reached (part of winning condition)
+    for plat in platformDict:
+        if platformDict[plat] == 0:
+            return False
+    return True
+
+# returns all reachable platforms of given platform
+def platformPerim(app, platform):
+    x0, y0, x1, y1 = platform
+    L = []
+    for plat in app.platforms:
+        if ((plat[0]-160 <= x0 <= plat[2]+160 or plat[0]-180 <= x1 <= plat[2]+160)
+        and plat[3]-120 <= y1 <= plat[3]+100):
+            L.append(plat)
+    return L
+
+# non destructively orders the list of reachable platforms of current platform by x0 value
+# this ensures that the last added platform in the queue is the final platform because it has the furthermost x0 value
+def orderPlatform(app, L):
+    orderL = copy.deepcopy(L)
+    # employing bubble sort to sort the list of platform tuples
+    for i in range(len(orderL)):
+        for j in range(len(orderL)-1):
+            if orderL[j][0] > orderL[j+1][0]:
+                sortTuple = orderL[j]
+                orderL[j] = orderL[j+1]
+                orderL[j+1] = sortTuple
+    return orderL
+
 # checks if the player and platform intersect
 def boundsIntersect(app, player, platform):
     (dx0, dy0, dx1, dy1) = player
@@ -345,7 +414,11 @@ def enemyHitPlayer(app, player, enemy):
 # checks if the player is on ground
 def touchGround(app, player):
     (dx0, dy0, dx1, dy1) = player
-    return 0 <= dy1 - app.ground[1] < 5
+    return 0 <= dy1 - app.ground[1] < 5 and app.ground[0] <= (dx1+dx0)/2+app.scrollX <= app.ground[2]
+
+def touchFinal(app, player):
+    (dx0, dy0, dx1, dy1) = player
+    return 0 <= dy1 - app.finalPlatform[1] < 5 and app.finalPlatform[0] <= (dx1+dx0)/2+app.scrollX <= app.finalPlatform[2]
 
 # Testing boundsIntersect conditions
 #(py0 <= dy1 <= py1)    
@@ -491,9 +564,9 @@ def keyPressed(app, event):
             app.playerScrollX += app.scrollSpeed
             app.playerX += app.scrollSpeed
             # ends game if they reached the final platform and retrieved all three tp items
-            if (app.playerScrollX >= app.width/1.15 and touchGround(app, playerBound) and 
+            if (app.playerScrollX >= app.width/1.15 and touchFinal(app, playerBound) and 
             app.tppowerTouch == [True, True, True] and 
-            app.platformColor == ['blue']*len(app.platformCells)):
+            app.platformColor == ['blue']*len(app.platforms)):
                 app.playerX -= app.scrollSpeed
                 app.playerScrollX -= app.scrollSpeed
                 app.isGameOver = True
@@ -519,7 +592,7 @@ def timerFired(app):
     # if yes, return
     # if player on platform, stop jump animation
     # otherwise continue jump animation
-    print(app.tppowerTouch)
+
     # checks all the items to see if they have been touched
     for item in range(len(app.tppoweritems)):
         if touchTP(app, playerBounds(app), tppowerBounds(app,item)):
@@ -531,6 +604,7 @@ def timerFired(app):
             enemyStep(app, enemy)
         if enemyHitPlayer(app, playerBounds(app), app.modifiedenemies[enemy]):
             app.playerDied = True
+    
 
     for platform in range(len(app.platforms)):
         if boundsIntersect(app, playerBounds(app), platformBounds(app, platform)):
@@ -544,6 +618,12 @@ def timerFired(app):
     playerBound = playerBounds(app)
     if touchGround(app, playerBound):
         return
+    if touchFinal(app, playerBound):
+        app.paused = False
+        return
+    
+    if playerBound[1] >= app.height:
+        app.playerDied = True
     
     # if player is on a platform, paused = False i.e. stop jumping
     if isPlayerOnAnyPlatform(app, playerBound):
@@ -634,19 +714,21 @@ def redrawAll(app, canvas):
         canvas.create_rectangle(x0-app.scrollX, y0, x1-app.scrollX, y1, outline='black', fill=app.platformColor[platform])
 
     # Basic ground level
-    canvas.create_rectangle(0, app.height-app.height/10, app.width, app.height, 
-                            fill='green', outline='black')
+    # canvas.create_rectangle(0, app.height-app.height/10, app.width, app.height, 
+    #                         fill='green', outline='black')
+    canvas.create_rectangle(0-app.scrollX, app.height-app.height/10, 150-app.scrollX, app.height, fill='green', outline='black')
 
     # Final platform to end game
     # turns blue and player is able to escape once all conditions are complete
-    if app.platformColor == ['blue']* len(app.platformCells) and app.tppowerTouch == [True, True, True]:
-        canvas.create_rectangle(app.width/2+app.width-app.scrollX, app.height/2.25+app.height/2.2,
-                                app.width/1.5+app.width-app.scrollX, app.height/2+app.height/2.2, fill='blue', outline='black')
+    solution = ['blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'black']
+    if app.platformColor == solution and app.tppowerTouch == [True, True, True]:
+        canvas.create_rectangle(app.width/2+app.width-app.scrollX, app.height-app.height/10,
+                                app.width/1.5+app.width-app.scrollX, app.height-app.height/10+20, fill='blue', outline='black')
     
     # otherwise the final platform is 'locked' at red
     else:
-        canvas.create_rectangle(app.width/2+app.width-app.scrollX, app.height/2.25+app.height/2.2,
-                                app.width/1.5+app.width-app.scrollX, app.height/2+app.height/2.2, fill='red', outline='black')
+        canvas.create_rectangle(app.width/2+app.width-app.scrollX, app.height-app.height/10,
+                                app.width/1.5+app.width-app.scrollX, app.height-app.height/10+20, fill='red', outline='black')
     
     # Drawing PowerUps/Items
 
