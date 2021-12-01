@@ -270,7 +270,7 @@ def redrawAll(app, canvas):
         for row in range(row0, row1):
             for col in range(col0, col1):
                 (x0, y0, x1, y1) = getCellBounds(app, row, col)
-                canvas.create_rectangle(x0, y0, x1, y1, outline='black', fill='black')
+                canvas.create_rectangle(x0, y0, x1, y1, outline='red', fill='black')
     
     # Drawing randomized enemies
     for enemy in app.enemyCells:
