@@ -614,6 +614,7 @@ def mousePressed(app, event):
     # if player hits 'help' then instructions appear
     if 360 <= event.x <= 540 and 150 <= event.y <= 250:
         app.mainmenu = False
+        app.layer = 0
         app.showhelp = True
 
 def keyPressed(app, event):
@@ -714,7 +715,7 @@ def keyPressed(app, event):
             for enemy in range(len(app.modifiedenemies)):
                 app.modifiedenemies[enemy][0] -= 50
                 app.modifiedenemies[enemy][2] -= 50
-        elif event.key == 'Space':
+        elif event.key == 'Space' and app.mainmenu == False and app.showhelp == False:
             app.playerTimer = 28
             app.paused = True
     
@@ -754,7 +755,7 @@ def keyPressed(app, event):
             app.spriteX += 50
             app.playerScrollX += 50
             #app.paused = True
-        elif event.key == 'Space':
+        elif event.key == 'Space' and app.mainmenu == False and app.showhelp == False:
             app.playerTimer = 28
             app.paused = True
         
